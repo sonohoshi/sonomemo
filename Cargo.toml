@@ -2,6 +2,11 @@
 name = "sonomemo"
 version = "0.1.0"
 edition = "2024"
+authors = ["sonohoshi"]
+description = "A powerful terminal-based memo application for power users."
+license = "MIT"
+repository = "https://github.com/sonohoshi/sonomemo"
+keywords = ["tui", "memo", "note-taking", "productivity", "pomodoro"]
 
 [dependencies]
 chrono = "0.4.42"
