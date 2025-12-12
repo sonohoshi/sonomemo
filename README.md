@@ -21,9 +21,23 @@ Rust와 Ratatui로 제작되어 가볍고 빠르며, 마우스를 건드리지 �
 
 ### 빌드 및 실행
 ```bash
-git clone https://github.com/yourusername/sonomemo.git
+git clone https://github.com/sonohoshi/sonomemo.git
 cd sonomemo
-cargo run --release
+cargo install --path .
+# 이제 어디서든 'sonomemo'를 입력하여 실행할 수 있습니다!
+```
+
+### Crates.io를 통한 설치 (추천)
+Rust가 설치되어 있다면 가장 간편한 방법입니다.
+```bash
+cargo install sonomemo
+```
+
+### 소스코드 빌드
+```bash
+git clone https://github.com/sonohoshi/sonomemo.git
+cd sonomemo
+cargo install --path .
 ```
 
 ## ⌨️ 단축키 (Keybindings)
