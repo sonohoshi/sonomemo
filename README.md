@@ -22,19 +22,19 @@ Sonomemo는 키보드 중심의 3가지 핵심 모드로 동작합니다.
 
 ```mermaid
 graph TD
-    Start((Start)) --> Editing[📝 Editing Mode<br/>(입력 모드)]
+    Start((Start)) --> Editing["📝 Editing Mode<br/>(입력 모드)"]
     
     subgraph Main Loop
-        Navigate[🧭 Navigate Mode<br/>(탐색 & 기능 모드)]
+        Navigate["🧭 Navigate Mode<br/>(탐색 & 기능 모드)"]
         Editing
-        Search[🔍 Search Mode<br/>(검색 모드)]
+        Search["🔍 Search Mode<br/>(검색 모드)"]
     end
 
     subgraph Popups
-        Pomodoro[🍅 Pomodoro]
-        Graph[📊 Activity Graph]
-        Tag[🏷️ Tag Filter]
-        Mood[🎭 Mood Tracker]
+        Pomodoro["🍅 Pomodoro"]
+        Graph["📊 Activity Graph"]
+        Tag["🏷️ Tag Filter"]
+        Mood["🎭 Mood Tracker"]
     end
 
     %% Transitions
@@ -42,7 +42,7 @@ graph TD
     Navigate -->|i| Editing
     Navigate -->|?| Search
     
-    Search -->|Enter| SearchResult[Result View]
+    Search -->|Enter| SearchResult["Result View"]
     SearchResult -->|Esc| Search
     Search -->|Esc| Navigate
     
