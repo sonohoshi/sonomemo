@@ -39,19 +39,32 @@ pub fn ui(f: &mut Frame, app: &mut App) {
     let list_items: Vec<ListItem> = app.logs
         .iter()
         .map(|entry| {
-            // 텍스트 줄바꿈 처리
-            let wrapped_lines = wrap(&entry.content, list_area_width);
+            // 텍스트 줄바꿈 처리 (멀티라인 엔트리 대응)
             let mut lines = Vec::new();
-            for (i, wline) in wrapped_lines.iter().enumerate() {
-                // 첫 줄은 파싱 로직 태움 (타임스탬프, 태그 등)
-                // 그 다음 줄부터는 그냥 텍스트로 (들여쓰기 살짝 주면 예쁨)
-                if i == 0 {
-                    lines.push(parse_log_line(&wline));
-                } else {
-                    // 이어지는 줄임을 표시하기 위해 앞에 공백 추가
-                    let indented = format!("  {}", wline);
-                    lines.push(parse_log_line(&indented));
-                }
+            
+            // 사용자가 입력한 엔터(\n)를 기준으로 먼저 나눔
+            for (line_idx, raw_line) in entry.content.lines().enumerate() {
+                 let wrapped_lines = wrap(raw_line, list_area_width);
+                 
+                 for (wrap_idx, wline) in wrapped_lines.iter().enumerate() {
+                      // 첫 줄의 첫 조각만 타임스탬프 파싱 시도
+                      // 그 외(사용자가 줄바꿈했거나, 너비 때문에 줄바꿈된 경우)는 일반 텍스트
+                      if line_idx == 0 && wrap_idx == 0 {
+                          lines.push(parse_log_line(&wline));
+                      } else {
+                          // 들여쓰기 처리
+                          // raw_line 자체가 이미 "  "로 시작할 수 있음 (storage.rs에서 저장 시 처리)
+                          // 하지만 너비 초과로 인한 wrap된 줄은 추가 들여쓰기가 필요할 수 있음
+                          
+                          let display_text = if wrap_idx > 0 {
+                               format!("    {}", wline) // wrap된 줄은 더 깊게 들여쓰기
+                          } else {
+                               format!("{}", wline) // 사용자가 줄바꿈한 줄은 그대로 (이미 공백 포함됨)
+                          };
+                          
+                          lines.push(parse_log_line(&display_text));
+                      }
+                 }
             }
             ListItem::new(Text::from(lines))
         })
@@ -78,7 +91,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 
     // 모드에 따른 메인 테두리 색상 결정
     let main_border_color = match app.input_mode {
-            InputMode::Normal => Color::White,
+            InputMode::Normal => Color::Reset,
             InputMode::Editing => Color::Green,
             InputMode::Search => Color::Cyan,
     };
@@ -137,7 +150,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
     let (input_title, border_color) = match app.input_mode {
         crate::app::InputMode::Search => (" Search Query (? to Search) ", Color::Cyan),
         crate::app::InputMode::Editing => (" Input (Press Esc to Normal) ", Color::Green),
-        crate::app::InputMode::Normal => (" Input (Normal Mode - Press 'i' to Edit) ", Color::White),
+        crate::app::InputMode::Normal => (" Input (Normal Mode - Press 'i' to Edit) ", Color::Reset),
     };
 
     let input_block = Block::default()
@@ -385,7 +398,7 @@ fn parse_log_line(text: &str) -> Line<'static> {
             } else {
                 if todo_prefix {
                      // 할 일 내용은 약간 밝게
-                     spans.push(Span::styled(word.to_string(), Style::default().fg(Color::White)));
+                     spans.push(Span::styled(word.to_string(), Style::default().fg(Color::Reset)));
                 } else {
                      spans.push(Span::raw(word.to_string()));
                 }

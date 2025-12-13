@@ -1,6 +1,6 @@
 use std::{error::Error, io};
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind},
+    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind, KeyModifiers},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -356,7 +356,12 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                         match key.code {
                             KeyCode::Esc => app.input_mode = InputMode::Normal,
                             KeyCode::Enter => {
-                                let input = app.textarea.lines().iter().map(|s| s.as_str()).collect::<Vec<&str>>().join(" ");
+                                // Shift + Enter => 줄바꿈
+                                if key.modifiers.contains(KeyModifiers::SHIFT) {
+                                    app.textarea.insert_newline();
+                                } else {
+                                    // 그냥 Enter => 저장 (기존 로직)
+                                let input = app.textarea.lines().iter().map(|s| s.as_str()).collect::<Vec<&str>>().join("\n  ");
                                 if !input.trim().is_empty() {
                                     if let Err(e) = storage::append_entry(&input) {
                                         // 에러 처리 (로그에 표시 등)
@@ -366,8 +371,20 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     // UI 갱신 (스크롤 포함)
                                     app.update_logs();
                                 }
-                                app.textarea.delete_line_by_head();
+                                
+                                // 멀티라인 입력 후 전체 내용을 지워야 함
+                                // delete_line_by_head는 한 줄만 지우므로, 전체 라인을 지우는 로직으로 변경
+                                while !app.textarea.is_empty() {
+                                    app.textarea.delete_line_by_head(); // 현재 라인 삭제
+                                    app.textarea.delete_char(); // 줄바꿈 문자 삭제 (또는 라인 병합 유도)
+                                    // 안전하게는 그냥 textarea를 새로 만드는게 낫지만, 스타일 유지를 위해 반복 삭제
+                                    
+                                    // 더 간단하고 확실한 방법: 새 인스턴스로 교체하되 스타일 재설정 (ui.rs에서 매번 설정하므로 괜찮음)
+                                    app.textarea = tui_textarea::TextArea::default();
+                                    break;
+                                }
                             }
+                        },
                             _ => {
                                 app.textarea.input(key);
                             }

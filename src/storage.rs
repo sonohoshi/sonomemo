@@ -51,28 +51,10 @@ pub fn read_today_entries() -> io::Result<Vec<LogEntry>> {
         return Ok(Vec::new());
     }
     
-    // 파일 경로 문자열 저장
     let path_str = path.to_string_lossy().to_string();
+    let content = fs::read_to_string(&path)?;
 
-    let mut file = fs::File::open(&path)?;
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
-
-    let mut entries = Vec::new();
-    for (i, line) in contents.lines().enumerate() {
-        // 시스템 마커 라인은 UI에 노출하지 않음
-        if line.contains("System: Carryover Checked") {
-            continue;
-        }
-
-        entries.push(LogEntry {
-            content: line.to_string(),
-            file_path: path_str.clone(),
-            line_number: i, // 0-based index
-        });
-    }
-    
-    Ok(entries)
+    Ok(parse_log_content(&content, &path_str))
 }
 
 pub fn search_entries(query: &str) -> io::Result<Vec<LogEntry>> {
@@ -89,14 +71,16 @@ pub fn search_entries(query: &str) -> io::Result<Vec<LogEntry>> {
                     let date_str = path.file_stem().and_then(|s| s.to_str()).unwrap_or("").to_string();
                     
                     if let Ok(content) = fs::read_to_string(&path) {
-                        for (i, line) in content.lines().enumerate() {
-                            if line.contains(query) {
-                                // 날짜 정보도 내용에 포함해서 보여줌 (검색 결과용)
-                                let display_content = format!("[{}] {}", date_str, line);
+                        let parsed_entries = parse_log_content(&content, &path_str);
+                        for entry in parsed_entries {
+                            if entry.content.contains(query) {
+                                // 날짜 정보 추가
+                                let display_content = format!("[{}] {}", date_str, entry.content);
+                                
                                 results.push(LogEntry {
                                     content: display_content,
-                                    file_path: path_str.clone(),
-                                    line_number: i,
+                                    file_path: entry.file_path,
+                                    line_number: entry.line_number,
                                 });
                             }
                         }
@@ -107,6 +91,33 @@ pub fn search_entries(query: &str) -> io::Result<Vec<LogEntry>> {
     }
     
     Ok(results)
+}
+
+fn parse_log_content(content: &str, path_str: &str) -> Vec<LogEntry> {
+    let mut entries: Vec<LogEntry> = Vec::new();
+    
+    for (i, line) in content.lines().enumerate() {
+        if line.contains("System: Carryover Checked") {
+            continue;
+        }
+
+        let is_continuation = line.starts_with("  ") || line.starts_with('\t');
+
+        if is_continuation {
+            if let Some(last) = entries.last_mut() {
+                last.content.push_str("\n");
+                last.content.push_str(line);
+                continue;
+            }
+        }
+
+        entries.push(LogEntry {
+            content: line.to_string(),
+            file_path: path_str.to_string(),
+            line_number: i,
+        });
+    }
+    entries
 }
 
 pub fn toggle_todo_status(entry: &LogEntry) -> io::Result<()> {
