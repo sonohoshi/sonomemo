@@ -1,37 +1,87 @@
-# Sonomemo (소노메모) 🧠
+# sonomemo (소노메모) 🧠
 
-**Sonomemo**는 **ADHD를 위한 문맥 기록용 터미널 앱**입니다.
+**sonomemo**는 **ADHD를 위한 문맥 기록용 터미널 앱**입니다.
 
-"방금 뭐 하려고 했지?", "지난 1시간 동안 난 뭘 한 거지?"
-자꾸 끊기는 생각의 흐름과 문맥을 터미널에서 즉시 붙잡아두세요.
-화려한 기능보다는 **빠른 기록**과 **현재 상태 파악**에 집중하여, 당신의 뇌가 길을 잃지 않게 도와줍니다.
+제가 필요해서 만들었습니다. 더 이상 서브라임 텍스트 플러그인 코드를 짜는건 질렸습니다. 클로드 코드에서 일 시키다가 알트 탭을 누르는것도 귀찮습니다. 그래서 제미나이의 도움을 좀 받았습니다. 사실 많이 받았습니다.
 
 ![Sonomemo Screenshot](screenshot_placeholder.png)
 
-## ✨ 왜 Sonomemo인가요?
+## ✨ 왜 굳이 이런걸?
 
-- **🧠 문맥의 외장 하드**: 휘발되는 단기 기억을 즉시 텍스트로 박제하세요.
-- **⚡ 로딩 없는 즉시 기록**: 딴짓 할 틈을 주지 않습니다. 켜자마자 바로 적으세요.
-- **🍅 강제 환기 (뽀모도로)**: 과몰입의 늪에서 사이렌으로 당신을 구조해줍니다.
-- **🌱 시각적 피드백**: 활동 그래프로 자신의 하루 패턴을 객관적으로 마주하세요.
-- **📝 마크다운 기반**: 모든 데이터는 `YYYY-MM-DD.md` 형식의 로컬 텍스트 파일로 저장됩니다.
-- **🍅 뽀모도로 타이머**: 몰입을 위한 타이머와 강제 휴식 알림(Siren) 기능.
-- **📊 활동 그래프 (잔디)**: 지난 2주간의 기록 습관을 시각적으로 확인하세요.
-- **✅ 할 일 및 태그**: `- [ ]` 문법으로 할 일 자동 인식, `#태그`로 분류.
+- **🧠 만든 사람 기억력이 모자랍니다.**: 메모를 안하면 보통 까먹습니다. 안까먹는다구요? 좀 더 중요한걸 기억하시기 바랍니다. 제가 일하면서 몇시쯤에 이 아키텍처가 구리다고 생각했는지까지 기억해야할 필요는 없는 것 같습니다.
+- **🍅 강제 환기 (뽀모도로)**: 기능이 뭐가 더 필요하지 싶어서 제미나이한테 물어봤더니 이런걸 제안했습니다. 사실 그냥 장난감 용도같기도 합니다.
+- **🌱 시각적 피드백**: 깃허브의 잔디밭 비슷한걸 볼 수 있습니다.
+- **📝 마크다운 기반**: 모든 데이터는 `YYYY-MM-DD.md` 형식의 로컬 텍스트 파일로 저장됩니다. 사실 마크다운일 필요가 있는진 모르겠어요. 제미나이가 그렇게 짜버렸습니다.
+- **✅ 할 일 및 태그**: `- [ ]` 문법으로 할 일 자동 인식, `#태그`로 분류. 필요하면 적당히 검색할 수도 있습니다. 이게 제일 좋은듯.
+
+이하 내용은 전부 제미나이가 적었습니다. 그냥 슥 보고 잘 썼네 싶어서 넣어놨습니다. 설명이 부족하다면 이슈로 올려주세요. 그대로 제미나이에 넘기겠습니다.
+
+## 🗺️ 사용 가이드 (App Flow)
+
+Sonomemo는 키보드 중심의 3가지 핵심 모드로 동작합니다.
+
+```mermaid
+graph TD
+    Start((Start)) --> Editing[📝 Editing Mode<br/>(입력 모드)]
+    
+    subgraph Main Loop
+        Navigate[🧭 Navigate Mode<br/>(탐색 & 기능 모드)]
+        Editing
+        Search[🔍 Search Mode<br/>(검색 모드)]
+    end
+
+    subgraph Popups
+        Pomodoro[🍅 Pomodoro]
+        Graph[📊 Activity Graph]
+        Tag[🏷️ Tag Filter]
+        Mood[🎭 Mood Tracker]
+    end
+
+    %% Transitions
+    Editing -->|Esc| Navigate
+    Navigate -->|i| Editing
+    Navigate -->|?| Search
+    
+    Search -->|Enter| SearchResult[Result View]
+    SearchResult -->|Esc| Search
+    Search -->|Esc| Navigate
+    
+    %% Popup Triggers
+    Navigate -->|p| Pomodoro
+    Navigate -->|g| Graph
+    Navigate -->|t| Tag
+    
+    %% Popup Exits
+    Pomodoro -->|Esc/Enter| Navigate
+    Graph -->|Any Key| Navigate
+    Tag -->|Esc/Enter| Navigate
+    Mood -->|Enter| Navigate
+    
+    %% Initial Flow
+    Start -.-> Mood
+```
+
+### 1. 📝 Editing Mode (입력 모드)
+> **"생각나는 것을 바로 적으세요"**
+- 앱을 켜자마자 만나는 화면입니다.
+- **Enter**: 메모 저장
+- **Shift + Enter**: 줄바꿈 (멀티라인 입력)
+- **Esc**: Navigate 모드로 전환
+
+### 2. 🧭 Navigate Mode (탐색 모드)
+> **"기록을 훑어보고 기능을 실행하세요"**
+- 화살표 키(`↑`, `↓`)로 이전 기록을 스크롤합니다.
+- `i`: 다시 입력 모드로 전환
+- `?`: 검색 모드 진입
+- `t`: 태그별로 모아보기
+- `p`: 뽀모도로 타이머 설정 (25분 등)
+- `g`: 활동 그래프 확인
+
+### 3. 🔍 Search Mode (검색 모드)
+- 검색어를 입력하고 Enter를 누르면 해당 단어가 포함된 메모만 필터링합니다.
+- `Esc`: 검색 취소 및 Navigate 모드 복귀
 
 ## 🚀 설치 방법
-
-### 요구 사항
-- Rust (Cargo)가 설치되어 있어야 합니다. (https://rustup.rs/)
-- 트루컬러(TrueColor)를 지원하는 터미널 권장 (Windows Terminal, iTerm2, Alacritty 등)
-
-### 빌드 및 실행
-```bash
-git clone https://github.com/sonohoshi/sonomemo.git
-cd sonomemo
-cargo install --path .
-# 이제 어디서든 'sonomemo'를 입력하여 실행할 수 있습니다!
-```
 
 ### Crates.io를 통한 설치 (추천)
 Rust가 설치되어 있다면 가장 간편한 방법입니다.
@@ -39,26 +89,46 @@ Rust가 설치되어 있다면 가장 간편한 방법입니다.
 cargo install sonomemo
 ```
 
-### 소스코드 빌드
+### 직접 빌드
 ```bash
 git clone https://github.com/sonohoshi/sonomemo.git
 cd sonomemo
 cargo install --path .
 ```
 
-## ⌨️ 단축키 (Keybindings)
+## ⌨️ 단축키 요약
 
-| 키 | 모드 | 설명 |
-|:--- |:--- |:--- |
-| `i` | Normal | 입력 모드 전환 (메모 작성) |
-| `Esc` | Any | Normal 모드 복귀 / 팝업 닫기 |
-| `?` | Normal | 검색 모드 진입 |
-| `t` | Normal | 태그 필터링 |
-| `p` | Normal | **뽀모도로 타이머 설정** |
-| `g` | Normal | **활동 그래프 확인** |
+| 키 | 동작 (Navigate 모드 기준) |
+|:--- |:--- |
+| `i` | 입력 모드 전환 (메모 작성) |
+| `?` | 검색 모드 진입 |
+| `t` | 태그 필터링 |
+| `p` | 뽀모도로 타이머 설정/해제 |
+| `g` | 활동 그래프(잔디) 확인 |
+| `q` | 앱 종료 |
+
+## ⚙️ 설정 (Configuration) (Optional)
+
+Sonomemo는 사용자 정의 텍스트 설정을 지원합니다.
+실행 파일이 있는 경로에 `config.toml` 파일을 생성하여 안내 문구(Placeholder)와 도움말을 수정할 수 있습니다.
+
+**`config.toml` 예시:**
+```toml
+# Sonomemo Configuration
+
+[placeholders]
+navigate = "키를 눌러 각종 기능을 사용하세요..."
+editing = "여기에 메모를 입력할까말까"
+search = "검색하기 << 엔터를 누르새요"
+
+[help]
+navigate = " [i] 입력 [t] 태그 [p] 뽀모도로 [g] 그래프 [q] 종료 "
+editing = " [Esc] 나가기 [Enter] 저장 [Shift+Enter] 줄바꿈 "
+search = " [Esc] 취소 [Enter] 필터 적용 "
+```
 
 ## 🛠️ 기여하기 (Contributing)
-이 프로젝트는 오픈소스입니다. 버그 제보나 기능 제안은 Issue를 통해 남겨주세요!
+알아서 잘 해주시면 제미나이한테 넘기겠습니다.
 
 ## 📄 라이선스
 MIT License (LICENSE 파일을 확인하세요)

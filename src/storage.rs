@@ -1,8 +1,8 @@
 use std::fs::{self, OpenOptions};
-use std::io::{self, Read, Write};
-use std::path::{Path, PathBuf};
+use std::io::{self, Write};
+use std::path::PathBuf;
 use chrono::Local;
-use crate::app::LogEntry;
+use crate::models::LogEntry;
 
 pub fn get_app_dir() -> PathBuf {
     // 임시로 현재 디렉토리의 logs 폴더 사용

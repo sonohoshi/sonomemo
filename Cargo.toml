@@ -1,6 +1,6 @@
 [package]
 name = "sonomemo"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 authors = ["sonohoshi"]
 description = "A context logging terminal app designed for ADHD brains."
@@ -17,4 +17,6 @@ ratatui = "0.29.0"
 tui-textarea = "0.7.0"
 textwrap = "0.16"
 unicode-width = "0.1.13"
+serde = { version = "1.0.228", features = ["derive"] }
+toml = "0.9.8"
 

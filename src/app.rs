@@ -3,45 +3,9 @@ use ratatui::widgets::ListState;
 use chrono::{DateTime, Local};
 use std::collections::HashMap;
 use crate::storage;
+use crate::models::{InputMode, LogEntry};
+use crate::config::Config;
 
-#[derive(PartialEq)]
-pub enum InputMode {
-    Normal,
-    Editing,
-    Search,
-}
-
-#[derive(Clone, Copy, PartialEq)]
-pub enum Mood {
-    Happy,
-    Neutral,
-    Stressed,
-    Focused,
-    Tired,
-}
-
-impl Mood {
-    pub fn all() -> Vec<Mood> {
-        vec![Mood::Happy, Mood::Neutral, Mood::Stressed, Mood::Focused, Mood::Tired]
-    }
-    
-    pub fn to_str(&self) -> &'static str {
-        match self {
-            Mood::Happy => "😊 조음",
-            Mood::Neutral => "😐 걍그럼",
-            Mood::Stressed => "😫 구림",
-            Mood::Focused => "🧐 집중",
-            Mood::Tired => "😴 피곤",
-        }
-    }
-}
-
-#[derive(Clone)]
-pub struct LogEntry {
-    pub content: String,
-    pub file_path: String,
-    pub line_number: usize,
-}
 
 pub struct App<'a> {
     pub input_mode: InputMode,
@@ -69,13 +33,19 @@ pub struct App<'a> {
     pub pomodoro_input: String,
     
     // 뽀모도로 종료 알림 (이 시간까지 알림 표시 & 입력 차단)
+    // 뽀모도로 종료 알림 (이 시간까지 알림 표시 & 입력 차단)
     pub pomodoro_alert_expiry: Option<DateTime<Local>>,
+    
+    // 설정 (안내 문구 등)
+    pub config: Config,
 }
 
 impl<'a> App<'a> {
     pub fn new() -> App<'a> {
+        let config = Config::load();
+        
         let mut textarea = TextArea::default();
-        textarea.set_placeholder_text("여기에 메모를 입력하세요... (Enter: 저장, Esc: 모드 전환, :q 종료)");
+        textarea.set_placeholder_text(&config.placeholders.editing);
         
         let logs = storage::read_today_entries().unwrap_or_else(|_| Vec::new());
         let mut logs_state = ListState::default();
@@ -135,6 +105,7 @@ impl<'a> App<'a> {
             show_pomodoro_popup: false,
             pomodoro_input: String::new(),
             pomodoro_alert_expiry: None,
+            config,
         }
     }
 
@@ -148,7 +119,6 @@ impl<'a> App<'a> {
         }
     }
 
-    pub fn on_tick(&mut self) {}
 
     pub fn scroll_up(&mut self) {
         if self.logs.is_empty() { return; }
@@ -172,5 +142,30 @@ impl<'a> App<'a> {
 
     pub fn quit(&mut self) {
         self.should_quit = true;
+    }
+
+    pub fn transition_to(&mut self, mode: InputMode) {
+        // Mode specific entry logic
+        match mode {
+            InputMode::Navigate => {
+                // Search 모드에서 돌아올 때는 입력창 내용을(검색어) 비워야 함
+                if self.input_mode == InputMode::Search {
+                    self.textarea = TextArea::default();
+                }
+                self.textarea.set_placeholder_text(&self.config.placeholders.navigate);
+            },
+            InputMode::Editing => {
+                self.textarea.set_placeholder_text(&self.config.placeholders.editing);
+                // 검색 결과 화면에서 편집으로 넘어갈 때 전체 로그로 복귀
+                if self.is_search_result {
+                     self.update_logs();
+                }
+            },
+            InputMode::Search => {
+                self.textarea = TextArea::default(); // 검색어 입력 위해 초기화
+                self.textarea.set_placeholder_text(&self.config.placeholders.search);
+            }
+        }
+        self.input_mode = mode;
     }
 }
