@@ -4,7 +4,7 @@
 
 제가 필요해서 만들었습니다. 더 이상 서브라임 텍스트 플러그인 코드를 짜는건 질렸습니다. 클로드 코드에서 일 시키다가 알트 탭을 누르는것도 귀찮습니다. 그래서 제미나이의 도움을 좀 받았습니다. 사실 많이 받았습니다.
 
-![Sonomemo Screenshot](screenshot_placeholder.png)
+<img width="1510" height="704" alt="image" src="https://github.com/user-attachments/assets/ed5b56fd-57bb-4958-a17c-2853ed7c8d2b" />
 
 ## ✨ 왜 굳이 이런걸?
 
