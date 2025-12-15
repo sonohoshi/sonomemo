@@ -46,7 +46,9 @@ impl Default for Placeholders {
 impl Default for HelpMessages {
     fn default() -> Self {
         Self {
-            navigate: " [i] Edit  [t] Tag  [?] Search  [Enter] Toggle  [p] Pomodoro  [g] Graph  [q] Quit ".to_string(),
+            navigate:
+                " [i] Edit  [t] Tag  [?] Search  [Enter] Toggle  [p] Pomodoro  [g] Graph  [q] Quit "
+                    .to_string(),
             editing: " [Esc] Navigate Mode  [Enter] Save Memo  [Shift+Enter] New Line ".to_string(),
             search: " [Esc] Reset Search  [Enter] Filter ".to_string(),
         }

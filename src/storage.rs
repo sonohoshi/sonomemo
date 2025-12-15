@@ -1,8 +1,8 @@
+use crate::models::LogEntry;
+use chrono::Local;
 use std::fs::{self, OpenOptions};
 use std::io::{self, Write};
 use std::path::PathBuf;
-use chrono::Local;
-use crate::models::LogEntry;
 
 pub fn get_app_dir() -> PathBuf {
     // 임시로 현재 디렉토리의 logs 폴더 사용
@@ -30,15 +30,12 @@ fn get_today_file_path() -> PathBuf {
 pub fn append_entry(content: &str) -> io::Result<()> {
     ensure_log_dir()?;
     let path = get_today_file_path();
-    
+
     let time = Local::now().format("%H:%M:%S").to_string();
     let line = format!("[{}] {}\n", time, content);
 
-    let mut file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(path)?;
-    
+    let mut file = OpenOptions::new().create(true).append(true).open(path)?;
+
     file.write_all(line.as_bytes())?;
     Ok(())
 }
@@ -46,11 +43,11 @@ pub fn append_entry(content: &str) -> io::Result<()> {
 pub fn read_today_entries() -> io::Result<Vec<LogEntry>> {
     ensure_log_dir()?;
     let path = get_today_file_path();
-    
+
     if !path.exists() {
         return Ok(Vec::new());
     }
-    
+
     let path_str = path.to_string_lossy().to_string();
     let content = fs::read_to_string(&path)?;
 
@@ -68,15 +65,19 @@ pub fn search_entries(query: &str) -> io::Result<Vec<LogEntry>> {
                 let path = entry.path();
                 if path.extension().and_then(|s| s.to_str()) == Some("md") {
                     let path_str = path.to_string_lossy().to_string();
-                    let date_str = path.file_stem().and_then(|s| s.to_str()).unwrap_or("").to_string();
-                    
+                    let date_str = path
+                        .file_stem()
+                        .and_then(|s| s.to_str())
+                        .unwrap_or("")
+                        .to_string();
+
                     if let Ok(content) = fs::read_to_string(&path) {
                         let parsed_entries = parse_log_content(&content, &path_str);
                         for entry in parsed_entries {
                             if entry.content.contains(query) {
                                 // 날짜 정보 추가
                                 let display_content = format!("[{}] {}", date_str, entry.content);
-                                
+
                                 results.push(LogEntry {
                                     content: display_content,
                                     file_path: entry.file_path,
@@ -89,13 +90,13 @@ pub fn search_entries(query: &str) -> io::Result<Vec<LogEntry>> {
             }
         }
     }
-    
+
     Ok(results)
 }
 
 fn parse_log_content(content: &str, path_str: &str) -> Vec<LogEntry> {
     let mut entries: Vec<LogEntry> = Vec::new();
-    
+
     for (i, line) in content.lines().enumerate() {
         if line.contains("System: Carryover Checked") {
             continue;
@@ -146,7 +147,7 @@ pub fn toggle_todo_status(entry: &LogEntry) -> io::Result<()> {
 
     let mut file = fs::File::create(&entry.file_path)?;
     file.write_all(new_content.as_bytes())?;
-    
+
     Ok(())
 }
 
@@ -197,7 +198,6 @@ pub fn get_last_file_pending_todos() -> io::Result<Vec<String>> {
         }
     }
     Ok(Vec::new())
-
 }
 
 pub fn get_all_tags() -> io::Result<Vec<(String, usize)>> {
@@ -229,7 +229,7 @@ pub fn get_all_tags() -> io::Result<Vec<(String, usize)>> {
     let mut tags: Vec<(String, usize)> = tag_counts.into_iter().collect();
     // 많이 쓰인 순서대로 정렬 (내림차순)
     tags.sort_by(|a, b| b.1.cmp(&a.1));
-    
+
     Ok(tags)
 }
 
@@ -263,8 +263,11 @@ pub fn get_activity_stats() -> io::Result<std::collections::HashMap<String, usiz
                         // 파일명(YYYY-MM-DD)을 키로 사용
                         if let Ok(content) = fs::read_to_string(&path) {
                             // 빈 줄이나 시스템 마커 제외하고 카운트
-                            let count = content.lines()
-                                .filter(|l| !l.trim().is_empty() && !l.contains("System: Carryover Checked"))
+                            let count = content
+                                .lines()
+                                .filter(|l| {
+                                    !l.trim().is_empty() && !l.contains("System: Carryover Checked")
+                                })
                                 .count();
                             stats.insert(filename.to_string(), count);
                         }
