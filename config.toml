@@ -6,6 +6,6 @@ editing = "여기에 메모를 입력할까말까"
 search = "검색하기 << 엔터를 누르새요"
 
 [help]
-navigate = " [i] 입력 [t] 태그 [p] 뽀모도로 [g] 그래프 [q] 종료 "
+navigate = " [i] 입력 [t] 태그 [?] 검색 모드 [p] 뽀모도로 [g] 잔디밭 [q] 종료 "
 editing = " [Esc] 나가기 [Enter] 저장 [Shift+Enter] 줄바꿈 "
 search = " [Esc] 취소 [Enter] 필터 적용 "

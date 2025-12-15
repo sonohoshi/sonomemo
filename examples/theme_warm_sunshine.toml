@@ -1,0 +1,14 @@
+# Warm Sunshine Theme
+# Copy the [theme] section below to your config.toml
+
+[theme]
+border_default = "Yellow"
+border_editing = "LightYellow"
+border_search = "LightRed"
+border_todo_header = "LightRed"
+text_highlight = "100,60,0" # Dark Orange background
+todo_done = "Green"
+todo_wip = "Red"
+tag = "Yellow"
+mood = "LightRed"
+timestamp = "Yellow"

@@ -11,9 +11,11 @@ use chrono::Local;
 use ratatui::style::Stylize;
 use crate::app::App;
 use crate::models::InputMode;
+use crate::ui::color_parser::parse_color;
 
 pub mod components;
 pub mod popups;
+pub mod color_parser;
 
 use components::parse_log_line;
 use popups::{render_activity_popup, render_siren_popup, render_pomodoro_popup, render_mood_popup, render_todo_popup, render_tag_popup};
@@ -54,7 +56,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
                  for (wrap_idx, wline) in wrapped_lines.iter().enumerate() {
                       // 첫 줄의 첫 조각만 타임스탬프 파싱 시도
                       if line_idx == 0 && wrap_idx == 0 {
-                          lines.push(parse_log_line(&wline));
+                          lines.push(parse_log_line(&wline, &app.config.theme));
                       } else {
                           let display_text = if wrap_idx > 0 {
                                format!("    {}", wline) // wrap된 줄은 더 깊게 들여쓰기
@@ -62,7 +64,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
                                format!("{}", wline) // 사용자가 줄바꿈한 줄은 그대로
                           };
                           
-                          lines.push(parse_log_line(&display_text));
+                          lines.push(parse_log_line(&display_text, &app.config.theme));
                       }
                  }
             }
@@ -91,9 +93,9 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 
     // 모드에 따른 메인 테두리 색상 결정
     let main_border_color = match app.input_mode {
-            InputMode::Navigate => Color::Reset,
-            InputMode::Editing => Color::Green,
-            InputMode::Search => Color::Cyan,
+            InputMode::Navigate => parse_color(&app.config.theme.border_default),
+            InputMode::Editing => parse_color(&app.config.theme.border_editing),
+            InputMode::Search => parse_color(&app.config.theme.border_search),
     };
 
     let logs_block = Block::default()
@@ -101,10 +103,11 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         .border_style(Style::default().fg(main_border_color))
         .title(title);
     
+    let highlight_bg = parse_color(&app.config.theme.text_highlight);
     let logs_list = List::new(list_items)
         .block(logs_block)
         .highlight_symbol("▶ ") // 조금 더 멋진 화살표
-        .highlight_style(Style::default().bg(Color::Rgb(50, 50, 50)).add_modifier(Modifier::BOLD)); // 배경색 하이라이트 
+        .highlight_style(Style::default().bg(highlight_bg).add_modifier(Modifier::BOLD)); // 배경색 하이라이트 
         
     f.render_stateful_widget(logs_list, top_chunks[0], &mut app.logs_state);
 
@@ -138,19 +141,26 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         })
         .collect();
 
+    let todo_border_color = parse_color(&app.config.theme.border_todo_header);
+    // 할 일이 없으면 Green(성공?), 있으면 Yellow(진행중?) -> 기본값 유지하되 테마 적용?
+    // 기존 로직: if todos.is_empty() { Color::Green } else { Color::Yellow }
+    // 여기서는 Configurable하게 만들기 애매하니 일단 todo_border_color를 기본으로 하고 empty일 때만 예외 처리?
+    // 혹은 Config에 todo_header_empty / todo_header_active 추가?
+    // 일단 간단히 todo_border_color만 사용.
+    
     let todo_block = Block::default()
         .borders(Borders::ALL)
         .title(" Today's Tasks ")
-        .border_style(Style::default().fg(if todos.is_empty() { Color::Green } else { Color::Yellow }));
+        .border_style(Style::default().fg(todo_border_color));
     
     let todo_list = List::new(todos).block(todo_block);
     f.render_widget(todo_list, top_chunks[1]);
 
     // 하단 입력창
     let (input_title, border_color) = match app.input_mode {
-        crate::models::InputMode::Search => (" Search ", Color::Cyan),
-        crate::models::InputMode::Editing => (" Input ", Color::Green),
-        crate::models::InputMode::Navigate => (" Navigate ", Color::Reset),
+        crate::models::InputMode::Search => (" Search ", parse_color(&app.config.theme.border_search)),
+        crate::models::InputMode::Editing => (" Input ", parse_color(&app.config.theme.border_editing)),
+        crate::models::InputMode::Navigate => (" Navigate ", parse_color(&app.config.theme.border_default)),
     };
 
     let input_block = Block::default()
