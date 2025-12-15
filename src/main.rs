@@ -106,6 +106,8 @@ fn check_timers(app: &mut App) {
 }
 
 fn handle_key_input(app: &mut App, key: event::KeyEvent) {
+    app.last_key_debug = format!("{:?}", key);
+
     if handle_popup_events(app, key) {
         return;
     }
