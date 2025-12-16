@@ -20,7 +20,7 @@ pub mod popups;
 use components::parse_log_line;
 use popups::{
     render_activity_popup, render_mood_popup, render_pomodoro_popup, render_siren_popup,
-    render_tag_popup, render_todo_popup,
+    render_tag_popup, render_todo_popup, render_path_popup,
 };
 
 pub fn ui(f: &mut Frame, app: &mut App) {
@@ -260,5 +260,9 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 
     if app.pomodoro_alert_expiry.is_some() {
         render_siren_popup(f);
+    }
+
+    if app.show_path_popup {
+        render_path_popup(f, app);
     }
 }

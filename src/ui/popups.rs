@@ -190,3 +190,39 @@ pub fn render_tag_popup(f: &mut Frame, app: &mut App) {
 
     f.render_stateful_widget(list, popup_layout[0], &mut app.tag_list_state);
 }
+
+pub fn render_path_popup(f: &mut Frame, app: &App) {
+    let block = Block::default()
+        .title(" 📂 Log Directory Path ")
+        .borders(Borders::ALL)
+        .style(Style::default().fg(Color::Cyan));
+    let area = centered_rect(70, 20, f.area());
+    f.render_widget(Clear, area);
+    f.render_widget(block, area);
+
+    // 절대 경로 변환 시도
+    let path_str = if let Ok(abs_path) = std::fs::canonicalize(&app.config.data.log_path) {
+        abs_path.to_string_lossy().to_string()
+    } else {
+        // 절대 경로 변환 실패 시 설정된 값 그대로 사용 (e.g. 경로가 아직 안 만들어졌을 때)
+        let mut p = std::env::current_dir().unwrap_or_default();
+        p.push(&app.config.data.log_path);
+        p.to_string_lossy().to_string()
+    };
+
+    let text_area = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .margin(2)
+        .split(area);
+
+    let path_text = Paragraph::new(path_str)
+        .style(Style::default().add_modifier(Modifier::BOLD))
+        .wrap(ratatui::widgets::Wrap { trim: true });
+    
+    let help_text = Paragraph::new("[Enter] Open Folder    [Esc] Close")
+        .style(Style::default().fg(Color::DarkGray));
+
+    f.render_widget(path_text, text_area[0]);
+    f.render_widget(help_text, text_area[1]);
+}

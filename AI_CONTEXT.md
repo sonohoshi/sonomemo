@@ -20,10 +20,11 @@
 - **Language**: Rust 🦀 (Edition 2024)
 - **TUI Framework**: `ratatui`, `crossterm`
 - **Input Handling**: `tui-textarea`, `crossterm` event loop
-- **Data**: 로컬 Markdown 파일 (`logs/YYYY-MM-DD.md`)
+- **Utils**: `regex` (URL detection)
+- **Data**: 로컬 Markdown 파일 (`logs/YYYY-MM-DD.md` or configurable `data.log_path`)
 
 ## 4. 아키텍처 및 주요 파일 (Files)
-- **설정 (`config.toml`)**: 사용자 정의 키 바인딩 및 테마 색상.
+- **설정 (`config.toml`)**: 사용자 정의 키 바인딩, 테마 색상, 로그 경로(`data.log_path`).
 - **진입점 (`src/main.rs`)**:
     - 앱 초기화, 메인 이벤트 루프.
     - **중요**: macOS `Shift+Enter` 지원을 위해 `KeyboardEnhancementFlags`가 활성화되어 있음.

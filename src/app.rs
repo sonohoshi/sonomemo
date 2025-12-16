@@ -26,6 +26,7 @@ pub struct App<'a> {
     pub pomodoro_end: Option<DateTime<Local>>,
     pub show_activity_popup: bool,
     pub activity_data: HashMap<String, usize>, // "YYYY-MM-DD" -> line_count
+    pub show_path_popup: bool,
 
     // 뽀모도로 입력 팝업
     pub show_pomodoro_popup: bool,
@@ -47,7 +48,8 @@ impl<'a> App<'a> {
         let mut textarea = TextArea::default();
         textarea.set_placeholder_text(&config.placeholders.editing);
 
-        let logs = storage::read_today_entries().unwrap_or_else(|_| Vec::new());
+        let logs =
+            storage::read_today_entries(&config.data.log_path).unwrap_or_else(|_| Vec::new());
         let mut logs_state = ListState::default();
         if !logs.is_empty() {
             logs_state.select(Some(logs.len() - 1));
@@ -69,9 +71,10 @@ impl<'a> App<'a> {
             // 기분 팝업이 안 뜨는 경우(이미 기분 입력함)에도 체크할지,
             // 아니면 그냥 뜰 때만 체크할지는 정책 나름이지만, 일단 시작 시 체크
             // 단, 오늘 이미 체크했으면 다시 묻지 않음
-            let already_checked = storage::is_carryover_done().unwrap_or(false);
+            let already_checked =
+                storage::is_carryover_done(&config.data.log_path).unwrap_or(false);
             if !already_checked {
-                if let Ok(todos) = storage::get_last_file_pending_todos() {
+                if let Ok(todos) = storage::get_last_file_pending_todos(&config.data.log_path) {
                     if !todos.is_empty() {
                         pending_todos = todos;
                         show_todo_popup = true;
@@ -100,6 +103,7 @@ impl<'a> App<'a> {
             pomodoro_end: None,
             show_activity_popup: false,
             activity_data: HashMap::new(),
+            show_path_popup: false,
             show_pomodoro_popup: false,
             pomodoro_input: String::new(),
             pomodoro_alert_expiry: None,
@@ -108,7 +112,7 @@ impl<'a> App<'a> {
     }
 
     pub fn update_logs(&mut self) {
-        if let Ok(logs) = storage::read_today_entries() {
+        if let Ok(logs) = storage::read_today_entries(&self.config.data.log_path) {
             self.logs = logs;
             self.is_search_result = false;
             if !self.logs.is_empty() {

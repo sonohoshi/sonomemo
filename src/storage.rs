@@ -4,32 +4,24 @@ use std::fs::{self, OpenOptions};
 use std::io::{self, Write};
 use std::path::PathBuf;
 
-pub fn get_app_dir() -> PathBuf {
-    // 임시로 현재 디렉토리의 logs 폴더 사용
-    // 실제 배포시에는 directories crate 사용하여 User/Documents 등 사용 권장
-    let mut path = std::env::current_dir().unwrap_or(PathBuf::from("."));
-    path.push("logs");
-    path
-}
-
-pub fn ensure_log_dir() -> io::Result<()> {
-    let path = get_app_dir();
+pub fn ensure_log_dir(log_path: &str) -> io::Result<()> {
+    let path = PathBuf::from(log_path);
     if !path.exists() {
         fs::create_dir_all(path)?;
     }
     Ok(())
 }
 
-fn get_today_file_path() -> PathBuf {
+fn get_today_file_path(log_path: &str) -> PathBuf {
     let today = Local::now().format("%Y-%m-%d").to_string();
-    let mut path = get_app_dir();
+    let mut path = PathBuf::from(log_path);
     path.push(format!("{}.md", today));
     path
 }
 
-pub fn append_entry(content: &str) -> io::Result<()> {
-    ensure_log_dir()?;
-    let path = get_today_file_path();
+pub fn append_entry(log_path: &str, content: &str) -> io::Result<()> {
+    ensure_log_dir(log_path)?;
+    let path = get_today_file_path(log_path);
 
     let time = Local::now().format("%H:%M:%S").to_string();
     let line = format!("[{}] {}\n", time, content);
@@ -40,9 +32,9 @@ pub fn append_entry(content: &str) -> io::Result<()> {
     Ok(())
 }
 
-pub fn read_today_entries() -> io::Result<Vec<LogEntry>> {
-    ensure_log_dir()?;
-    let path = get_today_file_path();
+pub fn read_today_entries(log_path: &str) -> io::Result<Vec<LogEntry>> {
+    ensure_log_dir(log_path)?;
+    let path = get_today_file_path(log_path);
 
     if !path.exists() {
         return Ok(Vec::new());
@@ -54,9 +46,9 @@ pub fn read_today_entries() -> io::Result<Vec<LogEntry>> {
     Ok(parse_log_content(&content, &path_str))
 }
 
-pub fn search_entries(query: &str) -> io::Result<Vec<LogEntry>> {
-    ensure_log_dir()?;
-    let dir = get_app_dir();
+pub fn search_entries(log_path: &str, query: &str) -> io::Result<Vec<LogEntry>> {
+    ensure_log_dir(log_path)?;
+    let dir = PathBuf::from(log_path);
     let mut results = Vec::new();
 
     if let Ok(entries) = fs::read_dir(dir) {
@@ -151,9 +143,9 @@ pub fn toggle_todo_status(entry: &LogEntry) -> io::Result<()> {
     Ok(())
 }
 
-pub fn get_last_file_pending_todos() -> io::Result<Vec<String>> {
-    ensure_log_dir()?;
-    let dir = get_app_dir();
+pub fn get_last_file_pending_todos(log_path: &str) -> io::Result<Vec<String>> {
+    ensure_log_dir(log_path)?;
+    let dir = PathBuf::from(log_path);
     let today = Local::now().format("%Y-%m-%d").to_string();
 
     if let Ok(entries) = fs::read_dir(dir) {
@@ -200,11 +192,11 @@ pub fn get_last_file_pending_todos() -> io::Result<Vec<String>> {
     Ok(Vec::new())
 }
 
-pub fn get_all_tags() -> io::Result<Vec<(String, usize)>> {
+pub fn get_all_tags(log_path: &str) -> io::Result<Vec<(String, usize)>> {
     use std::collections::HashMap;
 
-    ensure_log_dir()?;
-    let dir = get_app_dir();
+    ensure_log_dir(log_path)?;
+    let dir = PathBuf::from(log_path);
     let mut tag_counts = HashMap::new();
 
     if let Ok(entries) = fs::read_dir(dir) {
@@ -233,9 +225,9 @@ pub fn get_all_tags() -> io::Result<Vec<(String, usize)>> {
     Ok(tags)
 }
 
-pub fn is_carryover_done() -> io::Result<bool> {
-    ensure_log_dir()?;
-    let path = get_today_file_path();
+pub fn is_carryover_done(log_path: &str) -> io::Result<bool> {
+    ensure_log_dir(log_path)?;
+    let path = get_today_file_path(log_path);
     if !path.exists() {
         return Ok(false);
     }
@@ -243,15 +235,15 @@ pub fn is_carryover_done() -> io::Result<bool> {
     Ok(content.contains("System: Carryover Checked"))
 }
 
-pub fn mark_carryover_done() -> io::Result<()> {
-    append_entry("System: Carryover Checked")
+pub fn mark_carryover_done(log_path: &str) -> io::Result<()> {
+    append_entry(log_path, "System: Carryover Checked")
 }
 
-pub fn get_activity_stats() -> io::Result<std::collections::HashMap<String, usize>> {
+pub fn get_activity_stats(log_path: &str) -> io::Result<std::collections::HashMap<String, usize>> {
     use std::collections::HashMap;
 
-    ensure_log_dir()?;
-    let dir = get_app_dir();
+    ensure_log_dir(log_path)?;
+    let dir = PathBuf::from(log_path);
     let mut stats = HashMap::new();
 
     if let Ok(entries) = fs::read_dir(dir) {

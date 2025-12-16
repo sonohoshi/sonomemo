@@ -35,8 +35,15 @@ fn main() -> Result<(), Box<dyn Error>> {
         stdout,
         EnterAlternateScreen,
         EnableMouseCapture,
-        PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES)
     )?;
+
+    // 키보드 향상 플래그는 지원되지 않는 터미널(예: Windows Legacy Console)에서 에러를 뱉을 수 있음.
+    // 에러가 발생해도 앱 실행엔 지장이 없으므로 무시함.
+    let _ = execute!(
+        stdout,
+        PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES)
+    );
+
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
@@ -45,11 +52,14 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // 터미널 복구
     disable_raw_mode()?;
+    
+    // 종료 시에도 플래그 해제 시도 (실패해도 무방)
+    let _ = execute!(terminal.backend_mut(), PopKeyboardEnhancementFlags);
+    
     execute!(
         terminal.backend_mut(),
         LeaveAlternateScreen,
         DisableMouseCapture,
-        PopKeyboardEnhancementFlags
     )?;
     terminal.show_cursor()?;
 
@@ -148,6 +158,10 @@ fn handle_popup_events(app: &mut App, key: event::KeyEvent) -> bool {
         handle_pomodoro_popup(app, key);
         return true;
     }
+    if app.show_path_popup {
+        handle_path_popup(app, key);
+        return true;
+    }
     false
 }
 
@@ -179,7 +193,10 @@ fn handle_mood_popup(app: &mut App, key: event::KeyEvent) {
     } else if key_match(&key, &app.config.keybindings.popup.confirm) {
         if let Some(i) = app.mood_list_state.selected() {
             let mood = Mood::all()[i];
-            let _ = storage::append_entry(&format!("Mood: {}", mood.to_str()));
+            let _ = storage::append_entry(
+                &app.config.data.log_path,
+                &format!("Mood: {}", mood.to_str()),
+            );
             app.update_logs();
         }
         check_carryover(app);
@@ -191,19 +208,19 @@ fn handle_mood_popup(app: &mut App, key: event::KeyEvent) {
 }
 
 fn check_carryover(app: &mut App) {
-    let already_checked = storage::is_carryover_done().unwrap_or(false);
+    let already_checked = storage::is_carryover_done(&app.config.data.log_path).unwrap_or(false);
     if !already_checked {
-        if let Ok(todos) = storage::get_last_file_pending_todos() {
+        if let Ok(todos) = storage::get_last_file_pending_todos(&app.config.data.log_path) {
             if !todos.is_empty() {
                 app.pending_todos = todos;
                 app.show_todo_popup = true;
             } else {
                 app.transition_to(InputMode::Editing);
-                let _ = storage::mark_carryover_done();
+                let _ = storage::mark_carryover_done(&app.config.data.log_path);
             }
         } else {
             app.transition_to(InputMode::Editing);
-            let _ = storage::mark_carryover_done();
+            let _ = storage::mark_carryover_done(&app.config.data.log_path);
         }
     } else {
         app.transition_to(InputMode::Editing);
@@ -213,16 +230,16 @@ fn check_carryover(app: &mut App) {
 fn handle_todo_popup(app: &mut App, key: event::KeyEvent) {
     if key_match(&key, &app.config.keybindings.popup.confirm) {
         for todo in &app.pending_todos {
-            let _ = storage::append_entry(todo);
+            let _ = storage::append_entry(&app.config.data.log_path, todo);
         }
         app.update_logs();
         app.show_todo_popup = false;
         app.transition_to(InputMode::Editing);
-        let _ = storage::mark_carryover_done();
+        let _ = storage::mark_carryover_done(&app.config.data.log_path);
     } else if key_match(&key, &app.config.keybindings.popup.cancel) {
         app.show_todo_popup = false;
         app.transition_to(InputMode::Editing);
-        let _ = storage::mark_carryover_done();
+        let _ = storage::mark_carryover_done(&app.config.data.log_path);
     }
 }
 
@@ -255,7 +272,7 @@ fn handle_tag_popup(app: &mut App, key: event::KeyEvent) {
         if let Some(i) = app.tag_list_state.selected() {
             if i < app.tags.len() {
                 let query = app.tags[i].0.clone();
-                if let Ok(results) = storage::search_entries(&query) {
+                if let Ok(results) = storage::search_entries(&app.config.data.log_path, &query) {
                     app.logs = results;
                     app.is_search_result = true;
                     app.logs_state.select(Some(0));
@@ -296,7 +313,7 @@ fn handle_pomodoro_popup(app: &mut App, key: event::KeyEvent) {
 
 fn handle_normal_mode(app: &mut App, key: event::KeyEvent) {
     if key_match(&key, &app.config.keybindings.navigate.tags) {
-        if let Ok(tags) = storage::get_all_tags() {
+        if let Ok(tags) = storage::get_all_tags(&app.config.data.log_path) {
             app.tags = tags;
             if !app.tags.is_empty() {
                 app.tag_list_state.select(Some(0));
@@ -341,10 +358,12 @@ fn handle_normal_mode(app: &mut App, key: event::KeyEvent) {
             app.pomodoro_input = "25".to_string();
         }
     } else if key_match(&key, &app.config.keybindings.navigate.graph) {
-        if let Ok(data) = storage::get_activity_stats() {
+        if let Ok(data) = storage::get_activity_stats(&app.config.data.log_path) {
             app.activity_data = data;
             app.show_activity_popup = true;
         }
+    } else if key_match(&key, &app.config.keybindings.navigate.path) {
+        app.show_path_popup = true;
     }
 }
 
@@ -362,7 +381,7 @@ fn handle_search_mode(app: &mut App, key: event::KeyEvent) {
             .collect::<Vec<&str>>()
             .join(" ");
         if !query.trim().is_empty() {
-            if let Ok(results) = storage::search_entries(&query) {
+            if let Ok(results) = storage::search_entries(&app.config.data.log_path, &query) {
                 app.logs = results;
                 app.is_search_result = true;
                 app.logs_state.select(Some(0));
@@ -388,7 +407,7 @@ fn handle_editing_mode(app: &mut App, key: event::KeyEvent) {
             .collect::<Vec<&str>>()
             .join("\n           ");
         if !input.trim().is_empty() {
-            if let Err(e) = storage::append_entry(&input) {
+            if let Err(e) = storage::append_entry(&app.config.data.log_path, &input) {
                 eprintln!("Error saving: {}", e);
             }
             app.update_logs();
@@ -399,5 +418,28 @@ fn handle_editing_mode(app: &mut App, key: event::KeyEvent) {
         app.transition_to(InputMode::Editing);
     } else {
         app.textarea.input(key);
+    }
+}
+
+fn handle_path_popup(app: &mut App, key: event::KeyEvent) {
+    if key_match(&key, &app.config.keybindings.popup.confirm) {
+        // 폴더 열기
+        // 절대 경로 변환 시도
+        let path_to_open = if let Ok(abs_path) = std::fs::canonicalize(&app.config.data.log_path) {
+            abs_path
+        } else {
+            // 실패 시 상대 경로라도 시도
+            std::path::PathBuf::from(&app.config.data.log_path)
+        };
+
+        if let Err(e) = open::that(path_to_open) {
+            eprintln!("Failed to open folder: {}", e);
+        }
+        
+        app.show_path_popup = false;
+        app.transition_to(InputMode::Navigate);
+    } else if key_match(&key, &app.config.keybindings.popup.cancel) {
+        app.show_path_popup = false;
+        app.transition_to(InputMode::Navigate);
     }
 }

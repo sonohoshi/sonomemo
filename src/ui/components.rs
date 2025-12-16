@@ -55,6 +55,12 @@ pub fn parse_log_line(text: &str, theme: &Theme) -> Line<'static> {
         };
 
         // 태그 파싱 (#단어)
+        static URL_REGEX: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+        let url_regex = URL_REGEX.get_or_init(|| {
+            regex::Regex::new(r"https?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]")
+                .unwrap()
+        });
+
         for (i, word) in content.split_whitespace().enumerate() {
             if i > 0 {
                 spans.push(Span::raw(" ".to_string()));
@@ -74,13 +80,50 @@ pub fn parse_log_line(text: &str, theme: &Theme) -> Line<'static> {
                         .add_modifier(Modifier::ITALIC),
                 ));
             } else {
-                if todo_prefix {
+                if let Some(mat) = url_regex.find(word) {
+                    let start = mat.start();
+                    let end = mat.end();
+
+                    // URL 앞부분 (괄호 등)
+                    if start > 0 {
+                        spans.push(Span::styled(
+                            word[..start].to_string(),
+                            if todo_prefix {
+                                Style::default().fg(Color::Reset)
+                            } else {
+                                Style::default()
+                            },
+                        ));
+                    }
+
+                    // URL 본문
                     spans.push(Span::styled(
-                        word.to_string(),
-                        Style::default().fg(Color::Reset),
+                        word[start..end].to_string(),
+                        Style::default()
+                            .fg(Color::Blue)
+                            .add_modifier(Modifier::UNDERLINED),
                     ));
+
+                    // URL 뒷부분
+                    if end < word.len() {
+                        spans.push(Span::styled(
+                            word[end..].to_string(),
+                            if todo_prefix {
+                                Style::default().fg(Color::Reset)
+                            } else {
+                                Style::default()
+                            },
+                        ));
+                    }
                 } else {
-                    spans.push(Span::raw(word.to_string()));
+                    if todo_prefix {
+                        spans.push(Span::styled(
+                            word.to_string(),
+                            Style::default().fg(Color::Reset),
+                        ));
+                    } else {
+                        spans.push(Span::raw(word.to_string()));
+                    }
                 }
             }
         }

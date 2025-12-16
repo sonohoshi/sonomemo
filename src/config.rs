@@ -87,6 +87,13 @@ pub struct Config {
     pub keybindings: KeyBindings,
     #[serde(default)]
     pub theme: Theme,
+    #[serde(default)]
+    pub data: DataConfig,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct DataConfig {
+    pub log_path: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -105,9 +112,13 @@ pub struct HelpMessages {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct KeyBindings {
+    #[serde(default)]
     pub navigate: NavigateBindings,
+    #[serde(default)]
     pub editing: EditingBindings,
+    #[serde(default)]
     pub search: SearchBindings,
+    #[serde(default)]
     pub popup: PopupBindings,
 }
 
@@ -120,6 +131,7 @@ pub struct NavigateBindings {
     pub pomodoro: Vec<String>,
     pub graph: Vec<String>,
     pub toggle_todo: Vec<String>,
+    pub path: Vec<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -164,6 +176,15 @@ impl Default for Config {
             help: HelpMessages::default(),
             keybindings: KeyBindings::default(),
             theme: Theme::default(),
+            data: DataConfig::default(),
+        }
+    }
+}
+
+impl Default for DataConfig {
+    fn default() -> Self {
+        Self {
+            log_path: "logs".to_string(),
         }
     }
 }
@@ -193,30 +214,55 @@ impl Default for HelpMessages {
 impl Default for KeyBindings {
     fn default() -> Self {
         Self {
-            navigate: NavigateBindings {
-                quit: vec!["q".to_string(), "ㅂ".to_string()],
-                tags: vec!["t".to_string(), "ㅅ".to_string()],
-                insert: vec!["i".to_string(), "ㅑ".to_string()],
-                search: vec!["?".to_string()],
-                pomodoro: vec!["p".to_string(), "ㅔ".to_string()],
-                graph: vec!["g".to_string(), "ㅎ".to_string()],
-                toggle_todo: vec!["enter".to_string()],
-            },
-            editing: EditingBindings {
-                save: vec!["enter".to_string()],
-                newline: vec!["shift+enter".to_string()],
-                cancel: vec!["esc".to_string()],
-            },
-            search: SearchBindings {
-                submit: vec!["enter".to_string()],
-                cancel: vec!["esc".to_string()],
-            },
-            popup: PopupBindings {
-                confirm: vec!["enter".to_string(), "y".to_string(), "ㅛ".to_string()],
-                cancel: vec!["esc".to_string(), "n".to_string(), "ㅜ".to_string()],
-                up: vec!["up".to_string()],
-                down: vec!["down".to_string()],
-            },
+            navigate: NavigateBindings::default(),
+            editing: EditingBindings::default(),
+            search: SearchBindings::default(),
+            popup: PopupBindings::default(),
+        }
+    }
+}
+
+impl Default for NavigateBindings {
+    fn default() -> Self {
+        Self {
+            quit: vec!["q".to_string(), "ㅂ".to_string()],
+            tags: vec!["t".to_string(), "ㅅ".to_string()],
+            insert: vec!["i".to_string(), "ㅑ".to_string()],
+            search: vec!["?".to_string()],
+            pomodoro: vec!["p".to_string(), "ㅔ".to_string()],
+            graph: vec!["g".to_string(), "ㅎ".to_string()],
+            toggle_todo: vec!["enter".to_string()],
+            path: vec!["l".to_string(), "ㅣ".to_string()],
+        }
+    }
+}
+
+impl Default for EditingBindings {
+    fn default() -> Self {
+        Self {
+            save: vec!["enter".to_string()],
+            newline: vec!["shift+enter".to_string()],
+            cancel: vec!["esc".to_string()],
+        }
+    }
+}
+
+impl Default for SearchBindings {
+    fn default() -> Self {
+        Self {
+            submit: vec!["enter".to_string()],
+            cancel: vec!["esc".to_string()],
+        }
+    }
+}
+
+impl Default for PopupBindings {
+    fn default() -> Self {
+        Self {
+            confirm: vec!["enter".to_string(), "y".to_string(), "ㅛ".to_string()],
+            cancel: vec!["esc".to_string(), "n".to_string(), "ㅜ".to_string()],
+            up: vec!["up".to_string()],
+            down: vec!["down".to_string()],
         }
     }
 }
