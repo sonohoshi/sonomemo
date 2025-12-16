@@ -219,7 +219,7 @@ pub fn render_path_popup(f: &mut Frame, app: &App) {
     let path_text = Paragraph::new(path_str)
         .style(Style::default().add_modifier(Modifier::BOLD))
         .wrap(ratatui::widgets::Wrap { trim: true });
-    
+
     let help_text = Paragraph::new("[Enter] Open Folder    [Esc] Close")
         .style(Style::default().fg(Color::DarkGray));
 

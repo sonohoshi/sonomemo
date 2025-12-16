@@ -19,8 +19,8 @@ pub mod popups;
 
 use components::parse_log_line;
 use popups::{
-    render_activity_popup, render_mood_popup, render_pomodoro_popup, render_siren_popup,
-    render_tag_popup, render_todo_popup, render_path_popup,
+    render_activity_popup, render_mood_popup, render_path_popup, render_pomodoro_popup,
+    render_siren_popup, render_tag_popup, render_todo_popup,
 };
 
 pub fn ui(f: &mut Frame, app: &mut App) {

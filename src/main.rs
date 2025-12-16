@@ -31,11 +31,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // 터미널 초기화
     enable_raw_mode()?;
     let mut stdout = io::stdout();
-    execute!(
-        stdout,
-        EnterAlternateScreen,
-        EnableMouseCapture,
-    )?;
+    execute!(stdout, EnterAlternateScreen, EnableMouseCapture,)?;
 
     // 키보드 향상 플래그는 지원되지 않는 터미널(예: Windows Legacy Console)에서 에러를 뱉을 수 있음.
     // 에러가 발생해도 앱 실행엔 지장이 없으므로 무시함.
@@ -52,10 +48,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // 터미널 복구
     disable_raw_mode()?;
-    
+
     // 종료 시에도 플래그 해제 시도 (실패해도 무방)
     let _ = execute!(terminal.backend_mut(), PopKeyboardEnhancementFlags);
-    
+
     execute!(
         terminal.backend_mut(),
         LeaveAlternateScreen,
@@ -435,7 +431,7 @@ fn handle_path_popup(app: &mut App, key: event::KeyEvent) {
         if let Err(e) = open::that(path_to_open) {
             eprintln!("Failed to open folder: {}", e);
         }
-        
+
         app.show_path_popup = false;
         app.transition_to(InputMode::Navigate);
     } else if key_match(&key, &app.config.keybindings.popup.cancel) {
