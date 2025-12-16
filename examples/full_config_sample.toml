@@ -1,0 +1,35 @@
+# Full Configuration Sample
+# Copy this content to config.toml to customize everything!
+
+[placeholders]
+navigate = "Navigation Mode (Custom)"
+editing = "Editing Mode (Custom)"
+search = "Search Mode (Custom)"
+
+[keybindings.navigate]
+quit = ["q", "ctrl+q"]          # Must be a list like ["a", "b"]
+tags = ["t"]
+insert = ["i"]
+search = ["/"]
+pomodoro = ["p"]
+graph = ["g"]
+toggle_todo = ["enter"]
+
+[keybindings.editing]
+save = ["ctrl+s", "enter"]      # Note: "enter" here overlaps with newline if not careful
+newline = ["shift+enter"]
+cancel = ["esc"]
+
+[keybindings.search]
+submit = ["enter"]
+cancel = ["esc"]
+
+[keybindings.popup]
+confirm = ["y", "enter"]
+cancel = ["n", "esc"]
+up = ["k", "up"]
+down = ["j", "down"]
+
+[theme]
+border_default = "Green"
+# ... add other theme keys here

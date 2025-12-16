@@ -107,25 +107,41 @@ cargo install --path .
 | `g` | 활동 그래프(잔디) 확인 |
 | `q` | 앱 종료 |
 
-## ⚙️ 설정 (Configuration) (Optional)
+## ⚙️ 설정 (Configuration) (New!)
 
-Sonomemo는 사용자 정의 텍스트 설정을 지원합니다.
-실행 파일이 있는 경로에 `config.toml` 파일을 생성하여 안내 문구(Placeholder)와 도움말을 수정할 수 있습니다.
+Sonomemo v0.1.2부터는 `config.toml`을 통해 **단축키**와 **테마**를 자유롭게 변경할 수 있습니다.
+실행 파일이 있는 경로에 `config.toml` 파일을 생성하여 사용하세요.
 
-**`config.toml` 예시:**
+### 🎨 테마 및 단축키 설정 예시
 ```toml
 # Sonomemo Configuration
 
 [placeholders]
 navigate = "키를 눌러 각종 기능을 사용하세요..."
-editing = "여기에 메모를 입력할까말까"
-search = "검색하기 << 엔터를 누르새요"
+editing = "오늘의 기록을 남겨보세요..."
 
-[help]
-navigate = " [i] 입력 [t] 태그 [p] 뽀모도로 [g] 그래프 [q] 종료 "
-editing = " [Esc] 나가기 [Enter] 저장 [Shift+Enter] 줄바꿈 "
-search = " [Esc] 취소 [Enter] 필터 적용 "
+# 키 바인딩 설정 (배열 형태로 입력)
+[keybindings.navigate]
+quit = ["q", "ctrl+q"]
+tags = ["t"]
+pomodoro = ["p"]
+
+[keybindings.editing]
+save = ["enter"]
+newline = ["shift+enter"]
+cancel = ["esc"]
+
+# 테마 색상 설정 (색상명 또는 R,G,B)
+[theme]
+border_default = "Yellow"       # 기본 테두리
+text_highlight = "100,60,0"     # 강조 배경색 (R,G,B)
+todo_done = "Green"
+todo_wip = "Red"
+ mood = "LightRed"
 ```
+
+> **Tip**: `examples/` 폴더에 다양한 테마 샘플(`Warm Sunshine`, `Ocean Blue` 등)이 준비되어 있습니다!
+
 
 ## 🛠️ 기여하기 (Contributing)
 알아서 잘 해주시면 제미나이한테 넘기겠습니다.

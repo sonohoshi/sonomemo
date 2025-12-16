@@ -36,6 +36,7 @@ pub struct App<'a> {
     pub pomodoro_alert_expiry: Option<DateTime<Local>>,
 
     // 설정 (안내 문구 등)
+    // 설정 (안내 문구 등)
     pub config: Config,
 }
 

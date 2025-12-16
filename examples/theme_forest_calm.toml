@@ -1,0 +1,14 @@
+# Forest Calm Theme
+# Relaxing green earthy tones
+
+[theme]
+border_default = "Green"
+border_editing = "LightGreen"
+border_search = "Yellow"
+border_todo_header = "Yellow"
+text_highlight = "0,50,0" # Dark Green background
+todo_done = "LightGreen"
+todo_wip = "LightRed"
+tag = "Green"
+mood = "Yellow"
+timestamp = "DarkGray"

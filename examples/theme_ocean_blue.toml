@@ -1,0 +1,14 @@
+# Ocean Blue Theme
+# Cool, calm blue tones for focus
+
+[theme]
+border_default = "Blue"
+border_editing = "Cyan"
+border_search = "LightBlue"
+border_todo_header = "Cyan"
+text_highlight = "0,0,100" # Dark Blue background
+todo_done = "LightGreen"
+todo_wip = "Magenta"
+tag = "Cyan"
+mood = "Blue"
+timestamp = "LightCyan"

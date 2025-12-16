@@ -1,0 +1,14 @@
+# Midnight Neon Theme
+# Cyberpunk style with high contrast
+
+[theme]
+border_default = "Magenta"
+border_editing = "LightMagenta"
+border_search = "LightCyan"
+border_todo_header = "LightCyan"
+text_highlight = "50,0,50" # Deep Purple background
+todo_done = "LightGreen"
+todo_wip = "Red"
+tag = "LightMagenta"
+mood = "Cyan"
+timestamp = "DarkGray"
