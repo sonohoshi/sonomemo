@@ -16,9 +16,15 @@ pub enum Mood {
 
 impl Mood {
     pub fn all() -> Vec<Mood> {
-        vec![Mood::Happy, Mood::Neutral, Mood::Stressed, Mood::Focused, Mood::Tired]
+        vec![
+            Mood::Happy,
+            Mood::Neutral,
+            Mood::Stressed,
+            Mood::Focused,
+            Mood::Tired,
+        ]
     }
-    
+
     pub fn to_str(&self) -> &'static str {
         match self {
             Mood::Happy => "😊 조음",
