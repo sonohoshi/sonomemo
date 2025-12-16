@@ -1,10 +1,10 @@
-use ratatui::{
-    layout::{Constraint, Direction, Layout, Rect},
-    style::{Color, Style, Modifier},
-    text::{Line, Span},
-};
 use crate::config::Theme;
 use crate::ui::color_parser::parse_color;
+use ratatui::{
+    layout::{Constraint, Direction, Layout, Rect},
+    style::{Color, Modifier, Style},
+    text::{Line, Span},
+};
 
 // 팝업 위치 계산 헬퍼
 pub fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
@@ -29,15 +29,18 @@ pub fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
 
 pub fn parse_log_line(text: &str, theme: &Theme) -> Line<'static> {
     let mut spans = Vec::new();
-    
+
     // 타임스탬프 처리 [HH:MM:SS]
     let parts: Vec<&str> = text.splitn(2, "] ").collect();
     if parts.len() == 2 && parts[0].starts_with('[') {
         let timestamp_color = parse_color(&theme.timestamp);
-        spans.push(Span::styled(format!("{}] ", parts[0]), Style::default().fg(timestamp_color)));
-        
+        spans.push(Span::styled(
+            format!("{}] ", parts[0]),
+            Style::default().fg(timestamp_color),
+        ));
+
         let content = parts[1];
-        
+
         // TODO 체크박스 처리
         let (content, todo_prefix) = if content.starts_with("- [ ] ") {
             let color = parse_color(&theme.todo_wip);
@@ -58,15 +61,26 @@ pub fn parse_log_line(text: &str, theme: &Theme) -> Line<'static> {
             }
             if word.starts_with('#') {
                 let tag_color = parse_color(&theme.tag);
-                spans.push(Span::styled(word.to_string(), Style::default().fg(tag_color).add_modifier(Modifier::BOLD)));
+                spans.push(Span::styled(
+                    word.to_string(),
+                    Style::default().fg(tag_color).add_modifier(Modifier::BOLD),
+                ));
             } else if word.starts_with("Mood:") {
-                 let mood_color = parse_color(&theme.mood);
-                 spans.push(Span::styled("🎭 Mood:", Style::default().fg(mood_color).add_modifier(Modifier::ITALIC)));
+                let mood_color = parse_color(&theme.mood);
+                spans.push(Span::styled(
+                    "🎭 Mood:",
+                    Style::default()
+                        .fg(mood_color)
+                        .add_modifier(Modifier::ITALIC),
+                ));
             } else {
                 if todo_prefix {
-                     spans.push(Span::styled(word.to_string(), Style::default().fg(Color::Reset)));
+                    spans.push(Span::styled(
+                        word.to_string(),
+                        Style::default().fg(Color::Reset),
+                    ));
                 } else {
-                     spans.push(Span::raw(word.to_string()));
+                    spans.push(Span::raw(word.to_string()));
                 }
             }
         }

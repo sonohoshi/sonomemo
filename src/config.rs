@@ -1,7 +1,7 @@
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use serde::Deserialize;
 use std::fs;
 use std::path::Path;
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 pub fn key_match(key: &KeyEvent, bindings: &[String]) -> bool {
     for binding in bindings {
@@ -15,7 +15,7 @@ pub fn key_match(key: &KeyEvent, bindings: &[String]) -> bool {
 fn is_match(key: &KeyEvent, binding: &str) -> bool {
     let binding = binding.to_lowercase();
     let parts: Vec<&str> = binding.split('+').collect();
-    
+
     let mut target_modifiers = KeyModifiers::NONE;
     let mut target_code = KeyCode::Null;
 
@@ -34,10 +34,10 @@ fn is_match(key: &KeyEvent, binding: &str) -> bool {
             "right" => target_code = KeyCode::Right,
             // Handle single characters and other keys
             c if c.chars().count() == 1 => {
-                 if let Some(ch) = c.chars().next() {
-                     target_code = KeyCode::Char(ch);
-                 }
-            },
+                if let Some(ch) = c.chars().next() {
+                    target_code = KeyCode::Char(ch);
+                }
+            }
             _ => {} // Ignore unknown parts
         }
     }
@@ -45,33 +45,33 @@ fn is_match(key: &KeyEvent, binding: &str) -> bool {
     // Special case: "shift+enter" -> KeyCode::Enter with Shift modifier
     // But crossterm might report KeyCode::Char('\n') or similar depending on terminal?
     // Actually KeyCode::Enter is reported for Enter key.
-    
+
     // Check modifiers match
-    // Note: We only check if the target modifiers are present. 
+    // Note: We only check if the target modifiers are present.
     // If user presses Ctrl+Shift+C but binding says "Ctrl+C", strictly it's not a match?
     // Let's assume strict match for modifiers except maybe ignoring NumLock/CapsLock.
-    
+
     // Relaxed check: key code matches and required modifiers are present.
     // Allow extra modifiers? No, simpler to be strict.
-    
+
     if key.code != target_code {
-         // Special handling for KeyCode::Char vs shifted char
-         // e.g. binding "H" (implicitly shift+h) vs key "h"
-         // Current parser lowercases everything: "q" -> Char('q').
-         // If user presses 'Q' (Shift+q), crossterm reports Char('Q') and Shift modifier.
-         // But my parser sets target code to 'q'.
-         
-         if let KeyCode::Char(c) = key.code {
-             if let KeyCode::Char(tc) = target_code {
-                 if c.to_lowercase().next() == Some(tc) {
-                     // Chars match case-insensitively, now check modifiers
-                     // If binding specified "shift", target_modifiers has SHIFT.
-                     // If user pressed Shift, key.modifiers has SHIFT.
-                     return key.modifiers.contains(target_modifiers);
-                 }
-             }
-         }
-         return false;
+        // Special handling for KeyCode::Char vs shifted char
+        // e.g. binding "H" (implicitly shift+h) vs key "h"
+        // Current parser lowercases everything: "q" -> Char('q').
+        // If user presses 'Q' (Shift+q), crossterm reports Char('Q') and Shift modifier.
+        // But my parser sets target code to 'q'.
+
+        if let KeyCode::Char(c) = key.code {
+            if let KeyCode::Char(tc) = target_code {
+                if c.to_lowercase().next() == Some(tc) {
+                    // Chars match case-insensitively, now check modifiers
+                    // If binding specified "shift", target_modifiers has SHIFT.
+                    // If user pressed Shift, key.modifiers has SHIFT.
+                    return key.modifiers.contains(target_modifiers);
+                }
+            }
+        }
+        return false;
     }
 
     key.modifiers.contains(target_modifiers)
@@ -124,9 +124,9 @@ pub struct NavigateBindings {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct EditingBindings {
-    pub save: Vec<String>, // Enter
+    pub save: Vec<String>,    // Enter
     pub newline: Vec<String>, // Shift+Enter
-    pub cancel: Vec<String>, // Esc
+    pub cancel: Vec<String>,  // Esc
 }
 
 #[derive(Debug, Deserialize, Clone)]
