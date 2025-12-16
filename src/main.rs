@@ -191,7 +191,7 @@ fn handle_mood_popup(app: &mut App, key: event::KeyEvent) {
             let mood = Mood::all()[i];
             let _ = storage::append_entry(
                 &app.config.data.log_path,
-                &format!("Mood: {}", mood.to_str()),
+                &format!("Mood: {}", mood.as_str()),
             );
             app.update_logs();
         }
@@ -296,7 +296,7 @@ fn handle_pomodoro_popup(app: &mut App, key: event::KeyEvent) {
         app.pomodoro_input.clear();
     } else {
         match key.code {
-            KeyCode::Char(c) if c.is_digit(10) => {
+            KeyCode::Char(c) if c.is_ascii_digit() => {
                 app.pomodoro_input.push(c);
             }
             KeyCode::Backspace => {

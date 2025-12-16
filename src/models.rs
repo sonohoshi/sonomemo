@@ -25,7 +25,7 @@ impl Mood {
         ]
     }
 
-    pub fn to_str(&self) -> &'static str {
+    pub fn as_str(&self) -> &'static str {
         match self {
             Mood::Happy => "😊 조음",
             Mood::Neutral => "😐 걍그럼",

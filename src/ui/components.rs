@@ -42,14 +42,14 @@ pub fn parse_log_line(text: &str, theme: &Theme) -> Line<'static> {
         let content = parts[1];
 
         // TODO 체크박스 처리
-        let (content, todo_prefix) = if content.starts_with("- [ ] ") {
+        let (content, todo_prefix) = if let Some(stripped) = content.strip_prefix("- [ ] ") {
             let color = parse_color(&theme.todo_wip);
             spans.push(Span::styled("⬜ ", Style::default().fg(color))); // 미완료 이모지
-            (&content[6..], true)
-        } else if content.starts_with("- [x] ") {
+            (stripped, true)
+        } else if let Some(stripped) = content.strip_prefix("- [x] ") {
             let color = parse_color(&theme.todo_done);
             spans.push(Span::styled("✅ ", Style::default().fg(color))); // 완료 이모지
-            (&content[6..], true)
+            (stripped, true)
         } else {
             (content, false)
         };
@@ -79,52 +79,48 @@ pub fn parse_log_line(text: &str, theme: &Theme) -> Line<'static> {
                         .fg(mood_color)
                         .add_modifier(Modifier::ITALIC),
                 ));
-            } else {
-                if let Some(mat) = url_regex.find(word) {
-                    let start = mat.start();
-                    let end = mat.end();
+            } else if let Some(mat) = url_regex.find(word) {
+                let start = mat.start();
+                let end = mat.end();
 
-                    // URL 앞부분 (괄호 등)
-                    if start > 0 {
-                        spans.push(Span::styled(
-                            word[..start].to_string(),
-                            if todo_prefix {
-                                Style::default().fg(Color::Reset)
-                            } else {
-                                Style::default()
-                            },
-                        ));
-                    }
-
-                    // URL 본문
+                // URL 앞부분 (괄호 등)
+                if start > 0 {
                     spans.push(Span::styled(
-                        word[start..end].to_string(),
-                        Style::default()
-                            .fg(Color::Blue)
-                            .add_modifier(Modifier::UNDERLINED),
+                        word[..start].to_string(),
+                        if todo_prefix {
+                            Style::default().fg(Color::Reset)
+                        } else {
+                            Style::default()
+                        },
                     ));
-
-                    // URL 뒷부분
-                    if end < word.len() {
-                        spans.push(Span::styled(
-                            word[end..].to_string(),
-                            if todo_prefix {
-                                Style::default().fg(Color::Reset)
-                            } else {
-                                Style::default()
-                            },
-                        ));
-                    }
-                } else {
-                    if todo_prefix {
-                        spans.push(Span::styled(
-                            word.to_string(),
-                            Style::default().fg(Color::Reset),
-                        ));
-                    } else {
-                        spans.push(Span::raw(word.to_string()));
-                    }
                 }
+
+                // URL 본문
+                spans.push(Span::styled(
+                    word[start..end].to_string(),
+                    Style::default()
+                        .fg(Color::Blue)
+                        .add_modifier(Modifier::UNDERLINED),
+                ));
+
+                // URL 뒷부분
+                if end < word.len() {
+                    spans.push(Span::styled(
+                        word[end..].to_string(),
+                        if todo_prefix {
+                            Style::default().fg(Color::Reset)
+                        } else {
+                            Style::default()
+                        },
+                    ));
+                }
+            } else if todo_prefix {
+                spans.push(Span::styled(
+                    word.to_string(),
+                    Style::default().fg(Color::Reset),
+                ));
+            } else {
+                spans.push(Span::raw(word.to_string()));
             }
         }
     } else {
