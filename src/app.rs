@@ -39,9 +39,6 @@ pub struct App<'a> {
     // 설정 (안내 문구 등)
     // 설정 (안내 문구 등)
     pub config: Config,
-    
-    // 디버그용
-    pub last_key_debug: String,
 }
 
 impl<'a> App<'a> {
@@ -109,9 +106,7 @@ impl<'a> App<'a> {
             show_pomodoro_popup: false,
             pomodoro_input: String::new(),
             pomodoro_alert_expiry: None,
-            pomodoro_alert_expiry: None,
             config,
-            last_key_debug: String::new(),
         }
     }
 

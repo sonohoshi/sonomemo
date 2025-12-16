@@ -202,10 +202,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
         InputMode::Editing => &app.config.help.editing,
         InputMode::Search => &app.config.help.search,
     };
-    let debug_info = format!(" | Key: {}", app.last_key_debug);
-    let full_text = format!("{}{}", help_text, debug_info);
-    
-    let footer = Paragraph::new(Line::from(Span::styled(full_text, Style::default().fg(Color::DarkGray).add_modifier(Modifier::BOLD))))
+    let footer = Paragraph::new(Line::from(Span::styled(help_text, Style::default().fg(Color::DarkGray).add_modifier(Modifier::BOLD))))
         .block(Block::default().borders(Borders::NONE));
     f.render_widget(footer, chunks[2]);
 
