@@ -119,7 +119,7 @@ pub fn render_mood_popup(f: &mut Frame, app: &mut App) {
     f.render_widget(block, area);
 
     let moods = Mood::all();
-    let items: Vec<ListItem> = moods.iter().map(|m| ListItem::new(m.to_str())).collect();
+    let items: Vec<ListItem> = moods.iter().map(|m| ListItem::new(m.as_str())).collect();
 
     let popup_layout = Layout::default()
         .direction(Direction::Vertical)

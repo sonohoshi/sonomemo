@@ -77,7 +77,7 @@ fn is_match(key: &KeyEvent, binding: &str) -> bool {
     key.modifiers.contains(target_modifiers)
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Default)]
 pub struct Config {
     #[serde(default)]
     pub placeholders: Placeholders,
@@ -110,7 +110,7 @@ pub struct HelpMessages {
     pub search: String,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Default)]
 pub struct KeyBindings {
     #[serde(default)]
     pub navigate: NavigateBindings,
@@ -169,18 +169,6 @@ pub struct Theme {
     pub timestamp: String,
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            placeholders: Placeholders::default(),
-            help: HelpMessages::default(),
-            keybindings: KeyBindings::default(),
-            theme: Theme::default(),
-            data: DataConfig::default(),
-        }
-    }
-}
-
 impl Default for DataConfig {
     fn default() -> Self {
         Self {
@@ -207,17 +195,6 @@ impl Default for HelpMessages {
                     .to_string(),
             editing: " [Esc] Navigate Mode  [Enter] Save Memo  [Shift+Enter] New Line ".to_string(),
             search: " [Esc] Reset Search  [Enter] Filter ".to_string(),
-        }
-    }
-}
-
-impl Default for KeyBindings {
-    fn default() -> Self {
-        Self {
-            navigate: NavigateBindings::default(),
-            editing: EditingBindings::default(),
-            search: SearchBindings::default(),
-            popup: PopupBindings::default(),
         }
     }
 }

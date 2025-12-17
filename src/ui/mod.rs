@@ -57,7 +57,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
                 for (wrap_idx, wline) in wrapped_lines.iter().enumerate() {
                     // 첫 줄의 첫 조각만 타임스탬프 파싱 시도
                     if line_idx == 0 && wrap_idx == 0 {
-                        lines.push(parse_log_line(&wline, &app.config.theme));
+                        lines.push(parse_log_line(wline, &app.config.theme));
                     } else {
                         let display_text = if wrap_idx > 0 {
                             format!("    {}", wline) // wrap된 줄은 더 깊게 들여쓰기

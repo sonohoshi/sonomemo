@@ -52,30 +52,28 @@ pub fn search_entries(log_path: &str, query: &str) -> io::Result<Vec<LogEntry>> 
     let mut results = Vec::new();
 
     if let Ok(entries) = fs::read_dir(dir) {
-        for entry in entries {
-            if let Ok(entry) = entry {
-                let path = entry.path();
-                if path.extension().and_then(|s| s.to_str()) == Some("md") {
-                    let path_str = path.to_string_lossy().to_string();
-                    let date_str = path
-                        .file_stem()
-                        .and_then(|s| s.to_str())
-                        .unwrap_or("")
-                        .to_string();
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|s| s.to_str()) == Some("md") {
+                let path_str = path.to_string_lossy().to_string();
+                let date_str = path
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("")
+                    .to_string();
 
-                    if let Ok(content) = fs::read_to_string(&path) {
-                        let parsed_entries = parse_log_content(&content, &path_str);
-                        for entry in parsed_entries {
-                            if entry.content.contains(query) {
-                                // 날짜 정보 추가
-                                let display_content = format!("[{}] {}", date_str, entry.content);
+                if let Ok(content) = fs::read_to_string(&path) {
+                    let parsed_entries = parse_log_content(&content, &path_str);
+                    for entry in parsed_entries {
+                        if entry.content.contains(query) {
+                            // 날짜 정보 추가
+                            let display_content = format!("[{}] {}", date_str, entry.content);
 
-                                results.push(LogEntry {
-                                    content: display_content,
-                                    file_path: entry.file_path,
-                                    line_number: entry.line_number,
-                                });
-                            }
+                            results.push(LogEntry {
+                                content: display_content,
+                                file_path: entry.file_path,
+                                line_number: entry.line_number,
+                            });
                         }
                     }
                 }
@@ -98,7 +96,7 @@ fn parse_log_content(content: &str, path_str: &str) -> Vec<LogEntry> {
 
         if is_continuation {
             if let Some(last) = entries.last_mut() {
-                last.content.push_str("\n");
+                last.content.push('\n');
                 last.content.push_str(line);
                 continue;
             }
@@ -150,15 +148,13 @@ pub fn get_last_file_pending_todos(log_path: &str) -> io::Result<Vec<String>> {
 
     if let Ok(entries) = fs::read_dir(dir) {
         let mut file_paths = Vec::new();
-        for entry in entries {
-            if let Ok(entry) = entry {
-                let path = entry.path();
-                if path.extension().and_then(|s| s.to_str()) == Some("md") {
-                    // 오늘 파일은 제외 (지난 일만 가져오기 위함)
-                    if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
-                        if stem != today {
-                            file_paths.push(path);
-                        }
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|s| s.to_str()) == Some("md") {
+                // 오늘 파일은 제외 (지난 일만 가져오기 위함)
+                if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+                    if stem != today {
+                        file_paths.push(path);
                     }
                 }
             }
@@ -200,16 +196,14 @@ pub fn get_all_tags(log_path: &str) -> io::Result<Vec<(String, usize)>> {
     let mut tag_counts = HashMap::new();
 
     if let Ok(entries) = fs::read_dir(dir) {
-        for entry in entries {
-            if let Ok(entry) = entry {
-                let path = entry.path();
-                if path.extension().and_then(|s| s.to_str()) == Some("md") {
-                    if let Ok(content) = fs::read_to_string(&path) {
-                        for line in content.lines() {
-                            for word in line.split_whitespace() {
-                                if word.starts_with('#') && word.len() > 1 {
-                                    *tag_counts.entry(word.to_string()).or_insert(0) += 1;
-                                }
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|s| s.to_str()) == Some("md") {
+                if let Ok(content) = fs::read_to_string(&path) {
+                    for line in content.lines() {
+                        for word in line.split_whitespace() {
+                            if word.starts_with('#') && word.len() > 1 {
+                                *tag_counts.entry(word.to_string()).or_insert(0) += 1;
                             }
                         }
                     }
@@ -247,22 +241,20 @@ pub fn get_activity_stats(log_path: &str) -> io::Result<std::collections::HashMa
     let mut stats = HashMap::new();
 
     if let Ok(entries) = fs::read_dir(dir) {
-        for entry in entries {
-            if let Ok(entry) = entry {
-                let path = entry.path();
-                if path.extension().and_then(|s| s.to_str()) == Some("md") {
-                    if let Some(filename) = path.file_stem().and_then(|s| s.to_str()) {
-                        // 파일명(YYYY-MM-DD)을 키로 사용
-                        if let Ok(content) = fs::read_to_string(&path) {
-                            // 빈 줄이나 시스템 마커 제외하고 카운트
-                            let count = content
-                                .lines()
-                                .filter(|l| {
-                                    !l.trim().is_empty() && !l.contains("System: Carryover Checked")
-                                })
-                                .count();
-                            stats.insert(filename.to_string(), count);
-                        }
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|s| s.to_str()) == Some("md") {
+                if let Some(filename) = path.file_stem().and_then(|s| s.to_str()) {
+                    // 파일명(YYYY-MM-DD)을 키로 사용
+                    if let Ok(content) = fs::read_to_string(&path) {
+                        // 빈 줄이나 시스템 마커 제외하고 카운트
+                        let count = content
+                            .lines()
+                            .filter(|l| {
+                                !l.trim().is_empty() && !l.contains("System: Carryover Checked")
+                            })
+                            .count();
+                        stats.insert(filename.to_string(), count);
                     }
                 }
             }
