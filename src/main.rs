@@ -359,6 +359,8 @@ fn handle_normal_mode(app: &mut App, key: event::KeyEvent) {
             app.show_activity_popup = true;
         }
     } else if key_match(&key, &app.config.keybindings.navigate.path) {
+        // Initialize selection
+        app.path_list_state.select(Some(0));
         app.show_path_popup = true;
     }
 }
@@ -419,13 +421,18 @@ fn handle_editing_mode(app: &mut App, key: event::KeyEvent) {
 
 fn handle_path_popup(app: &mut App, key: event::KeyEvent) {
     if key_match(&key, &app.config.keybindings.popup.confirm) {
-        // 폴더 열기
-        // 절대 경로 변환 시도
-        let path_to_open = if let Ok(abs_path) = std::fs::canonicalize(&app.config.data.log_path) {
-            abs_path
+        let index = app.path_list_state.selected().unwrap_or(0);
+        
+        let path_to_open = if index == 0 {
+            // 1. Log Path
+            if let Ok(abs_path) = std::fs::canonicalize(&app.config.data.log_path) {
+                abs_path
+            } else {
+                std::path::PathBuf::from(&app.config.data.log_path)
+            }
         } else {
-            // 실패 시 상대 경로라도 시도
-            std::path::PathBuf::from(&app.config.data.log_path)
+            // 2. Config Path (CWD)
+            std::env::current_dir().unwrap_or_default()
         };
 
         if let Err(e) = open::that(path_to_open) {
@@ -437,5 +444,18 @@ fn handle_path_popup(app: &mut App, key: event::KeyEvent) {
     } else if key_match(&key, &app.config.keybindings.popup.cancel) {
         app.show_path_popup = false;
         app.transition_to(InputMode::Navigate);
+    } else if key_match(&key, &app.config.keybindings.popup.up) {
+        let i = match app.path_list_state.selected() {
+            Some(i) => if i == 0 { 1 } else { i - 1 },
+            None => 0,
+        };
+        app.path_list_state.select(Some(i));
+    } else if key_match(&key, &app.config.keybindings.popup.down) {
+        let i = match app.path_list_state.selected() {
+            Some(i) => if i >= 1 { 0 } else { i + 1 },
+            None => 0,
+        };
+        app.path_list_state.select(Some(i));
     }
 }
+

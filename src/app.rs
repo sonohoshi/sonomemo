@@ -39,6 +39,7 @@ pub struct App<'a> {
     // 설정 (안내 문구 등)
     // 설정 (안내 문구 등)
     pub config: Config,
+    pub path_list_state: ListState,
 }
 
 impl<'a> App<'a> {
@@ -108,6 +109,7 @@ impl<'a> App<'a> {
             pomodoro_input: String::new(),
             pomodoro_alert_expiry: None,
             config,
+            path_list_state: ListState::default(),
         }
     }
 

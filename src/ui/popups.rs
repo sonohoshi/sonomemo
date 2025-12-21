@@ -191,38 +191,60 @@ pub fn render_tag_popup(f: &mut Frame, app: &mut App) {
     f.render_stateful_widget(list, popup_layout[0], &mut app.tag_list_state);
 }
 
-pub fn render_path_popup(f: &mut Frame, app: &App) {
+pub fn render_path_popup(f: &mut Frame, app: &mut App) {
     let block = Block::default()
-        .title(" 📂 Log Directory Path ")
+        .title(" 📂 Locations (Enter to Open) ")
         .borders(Borders::ALL)
         .style(Style::default().fg(Color::Cyan));
     let area = centered_rect(70, 20, f.area());
     f.render_widget(Clear, area);
     f.render_widget(block, area);
 
-    // 절대 경로 변환 시도
-    let path_str = if let Ok(abs_path) = std::fs::canonicalize(&app.config.data.log_path) {
-        abs_path.to_string_lossy().to_string()
+    // 1. Log Path
+    let log_path_str = if let Ok(abs_path) = std::fs::canonicalize(&app.config.data.log_path) {
+        let s = abs_path.to_string_lossy().to_string();
+        if s.starts_with(r"\\?\") {
+            s[4..].to_string()
+        } else {
+            s
+        }
     } else {
-        // 절대 경로 변환 실패 시 설정된 값 그대로 사용 (e.g. 경로가 아직 안 만들어졌을 때)
         let mut p = std::env::current_dir().unwrap_or_default();
         p.push(&app.config.data.log_path);
         p.to_string_lossy().to_string()
     };
+    // 2. Config Path
+    let config_path = std::path::Path::new("config.toml");
+    let config_path_str = if let Ok(abs_path) = std::fs::canonicalize(config_path) {
+        let s = abs_path.to_string_lossy().to_string();
+        if s.starts_with(r"\\?\") {
+            s[4..].to_string()
+        } else {
+            s
+        }
+    } else {
+        let mut p = std::env::current_dir().unwrap_or_default();
+        p.push("config.toml");
+        p.to_string_lossy().to_string()
+    };
 
-    let text_area = Layout::default()
+    let items = vec![
+        ListItem::new(format!("Log Directory: {}", log_path_str)),
+        ListItem::new(format!("Config File:   {} {}", config_path_str,
+            if config_path.exists() { "[Found]" } else { "[Not Found]" }
+        )),
+    ];
+
+    let list = List::new(items)
+        .highlight_symbol(">> ")
+        .highlight_style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD));
+    
+    let popup_layout = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .constraints([Constraint::Percentage(100)])
         .margin(2)
         .split(area);
 
-    let path_text = Paragraph::new(path_str)
-        .style(Style::default().add_modifier(Modifier::BOLD))
-        .wrap(ratatui::widgets::Wrap { trim: true });
-
-    let help_text = Paragraph::new("[Enter] Open Folder    [Esc] Close")
-        .style(Style::default().fg(Color::DarkGray));
-
-    f.render_widget(path_text, text_area[0]);
-    f.render_widget(help_text, text_area[1]);
+    f.render_stateful_widget(list, popup_layout[0], &mut app.path_list_state);
 }
+
