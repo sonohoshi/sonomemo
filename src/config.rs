@@ -63,11 +63,8 @@ fn is_match(key: &KeyEvent, binding: &str) -> bool {
 
         if let KeyCode::Char(c) = key.code {
             if let KeyCode::Char(tc) = target_code {
-                if c.to_lowercase().next() == Some(tc) {
-                    // Chars match case-insensitively, now check modifiers
-                    // If binding specified "shift", target_modifiers has SHIFT.
-                    // If user pressed Shift, key.modifiers has SHIFT.
-                    return key.modifiers.contains(target_modifiers);
+                if c.to_lowercase().next() == Some(tc) && key.modifiers.contains(target_modifiers) {
+                    return true;
                 }
             }
         }
