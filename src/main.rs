@@ -37,7 +37,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     // 에러가 발생해도 앱 실행엔 지장이 없으므로 무시함.
     let _ = execute!(
         stdout,
-        PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES)
+        PushKeyboardEnhancementFlags(
+            KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES
+                | KeyboardEnhancementFlags::REPORT_ALTERNATE_KEYS,
+        )
     );
 
     let backend = CrosstermBackend::new(stdout);
@@ -422,7 +425,7 @@ fn handle_editing_mode(app: &mut App, key: event::KeyEvent) {
 fn handle_path_popup(app: &mut App, key: event::KeyEvent) {
     if key_match(&key, &app.config.keybindings.popup.confirm) {
         let index = app.path_list_state.selected().unwrap_or(0);
-        
+
         let path_to_open = if index == 0 {
             // 1. Log Path
             if let Ok(abs_path) = std::fs::canonicalize(&app.config.data.log_path) {
@@ -446,16 +449,27 @@ fn handle_path_popup(app: &mut App, key: event::KeyEvent) {
         app.transition_to(InputMode::Navigate);
     } else if key_match(&key, &app.config.keybindings.popup.up) {
         let i = match app.path_list_state.selected() {
-            Some(i) => if i == 0 { 1 } else { i - 1 },
+            Some(i) => {
+                if i == 0 {
+                    1
+                } else {
+                    i - 1
+                }
+            }
             None => 0,
         };
         app.path_list_state.select(Some(i));
     } else if key_match(&key, &app.config.keybindings.popup.down) {
         let i = match app.path_list_state.selected() {
-            Some(i) => if i >= 1 { 0 } else { i + 1 },
+            Some(i) => {
+                if i >= 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
             None => 0,
         };
         app.path_list_state.select(Some(i));
     }
 }
-

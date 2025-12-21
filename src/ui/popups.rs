@@ -230,15 +230,23 @@ pub fn render_path_popup(f: &mut Frame, app: &mut App) {
 
     let items = vec![
         ListItem::new(format!("Log Directory: {}", log_path_str)),
-        ListItem::new(format!("Config File:   {} {}", config_path_str,
-            if config_path.exists() { "[Found]" } else { "[Not Found]" }
+        ListItem::new(format!(
+            "Config File:   {} {}",
+            config_path_str,
+            if config_path.exists() {
+                "[Found]"
+            } else {
+                "[Not Found]"
+            }
         )),
     ];
 
-    let list = List::new(items)
-        .highlight_symbol(">> ")
-        .highlight_style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD));
-    
+    let list = List::new(items).highlight_symbol(">> ").highlight_style(
+        Style::default()
+            .fg(Color::Yellow)
+            .add_modifier(Modifier::BOLD),
+    );
+
     let popup_layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Percentage(100)])
@@ -247,4 +255,3 @@ pub fn render_path_popup(f: &mut Frame, app: &mut App) {
 
     f.render_stateful_widget(list, popup_layout[0], &mut app.path_list_state);
 }
-

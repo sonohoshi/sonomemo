@@ -75,11 +75,10 @@ impl<'a> App<'a> {
             let already_checked =
                 storage::is_carryover_done(&config.data.log_path).unwrap_or(false);
             if !already_checked {
-                if let Ok(todos) = storage::get_last_file_pending_todos(&config.data.log_path) {
-                    if !todos.is_empty() {
-                        pending_todos = todos;
-                        show_todo_popup = true;
-                    }
+                let todos = storage::get_last_file_pending_todos(&config.data.log_path).unwrap_or_default();
+                if !todos.is_empty() {
+                    pending_todos = todos;
+                    show_todo_popup = true;
                 }
             }
         }

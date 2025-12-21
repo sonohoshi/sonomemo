@@ -31,15 +31,26 @@ pub fn parse_log_line(text: &str, theme: &Theme) -> Line<'static> {
     let mut spans = Vec::new();
 
     // 타임스탬프 처리 [HH:MM:SS]
-    let parts: Vec<&str> = text.splitn(2, "] ").collect();
-    if parts.len() == 2 && parts[0].starts_with('[') {
+    // 텍스트가 [로 시작하고 ]가 있는 경우 타임스탬프로 간주
+    let timestamp_match = if text.starts_with('[') {
+        text.find(']').map(|i| (i, &text[..=i], &text[i + 1..]))
+    } else {
+        None
+    };
+
+    if let Some((_, timestamp_part, mut content_part)) = timestamp_match {
+        // 타임스탬프 뒤 공백 제거
+        if content_part.starts_with(' ') {
+            content_part = &content_part[1..];
+        }
+
         let timestamp_color = parse_color(&theme.timestamp);
         spans.push(Span::styled(
-            format!("{}] ", parts[0]),
+            format!("{} ", timestamp_part), // 표시할 땐 공백 추가
             Style::default().fg(timestamp_color),
         ));
 
-        let content = parts[1];
+        let content = content_part;
 
         // TODO 체크박스 처리
         let (content, todo_prefix) = if let Some(stripped) = content.strip_prefix("- [ ] ") {
