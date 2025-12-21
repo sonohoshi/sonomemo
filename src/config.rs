@@ -61,13 +61,11 @@ fn is_match(key: &KeyEvent, binding: &str) -> bool {
         // If user presses 'Q' (Shift+q), crossterm reports Char('Q') and Shift modifier.
         // But my parser sets target code to 'q'.
 
-        if let KeyCode::Char(c) = key.code {
-            if let KeyCode::Char(tc) = target_code {
-                if c.to_lowercase().next() == Some(tc) && key.modifiers.contains(target_modifiers) {
+        if let KeyCode::Char(c) = key.code
+            && let KeyCode::Char(tc) = target_code
+                && c.to_lowercase().next() == Some(tc) && key.modifiers.contains(target_modifiers) {
                     return true;
                 }
-            }
-        }
         return false;
     }
 
@@ -261,15 +259,14 @@ impl Default for Theme {
 impl Config {
     pub fn load() -> Self {
         let config_path = Path::new("config.toml");
-        if config_path.exists() {
-            if let Ok(content) = fs::read_to_string(config_path) {
+        if config_path.exists()
+            && let Ok(content) = fs::read_to_string(config_path) {
                 if let Ok(config) = toml::from_str(&content) {
                     return config;
                 } else {
                     eprintln!("Failed to parse config.toml, using defaults.");
                 }
             }
-        }
         Self::default()
     }
 }

@@ -95,11 +95,10 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                 }
             }
 
-            if let Event::Key(key) = event {
-                if key.kind == KeyEventKind::Press {
+            if let Event::Key(key) = event
+                && key.kind == KeyEventKind::Press {
                     handle_key_input(app, key);
                 }
-            }
         }
 
         if app.should_quit {
@@ -109,18 +108,16 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
 }
 
 fn check_timers(app: &mut App) {
-    if let Some(end_time) = app.pomodoro_end {
-        if Local::now() >= end_time {
+    if let Some(end_time) = app.pomodoro_end
+        && Local::now() >= end_time {
             app.pomodoro_end = None; // 타이머 종료
             app.pomodoro_alert_expiry = Some(Local::now() + Duration::seconds(5));
         }
-    }
 
-    if let Some(expiry) = app.pomodoro_alert_expiry {
-        if Local::now() >= expiry {
+    if let Some(expiry) = app.pomodoro_alert_expiry
+        && Local::now() >= expiry {
             app.pomodoro_alert_expiry = None; // 알림 종료
         }
-    }
 }
 
 fn handle_key_input(app: &mut App, key: event::KeyEvent) {
@@ -268,8 +265,8 @@ fn handle_tag_popup(app: &mut App, key: event::KeyEvent) {
         };
         app.tag_list_state.select(Some(i));
     } else if key_match(&key, &app.config.keybindings.popup.confirm) {
-        if let Some(i) = app.tag_list_state.selected() {
-            if i < app.tags.len() {
+        if let Some(i) = app.tag_list_state.selected()
+            && i < app.tags.len() {
                 let query = app.tags[i].0.clone();
                 if let Ok(results) = storage::search_entries(&app.config.data.log_path, &query) {
                     app.logs = results;
@@ -277,7 +274,6 @@ fn handle_tag_popup(app: &mut App, key: event::KeyEvent) {
                     app.logs_state.select(Some(0));
                 }
             }
-        }
         app.show_tag_popup = false;
         app.transition_to(InputMode::Navigate);
     } else if key_match(&key, &app.config.keybindings.popup.cancel) {
@@ -335,8 +331,8 @@ fn handle_normal_mode(app: &mut App, key: event::KeyEvent) {
             app.update_logs();
         }
     } else if key_match(&key, &app.config.keybindings.navigate.toggle_todo) {
-        if let Some(i) = app.logs_state.selected() {
-            if i < app.logs.len() {
+        if let Some(i) = app.logs_state.selected()
+            && i < app.logs.len() {
                 let entry = &app.logs[i];
                 if entry.content.contains("- [ ]") || entry.content.contains("- [x]") {
                     let _ = storage::toggle_todo_status(entry);
@@ -348,7 +344,6 @@ fn handle_normal_mode(app: &mut App, key: event::KeyEvent) {
                     app.logs_state.select(Some(i));
                 }
             }
-        }
     } else if key_match(&key, &app.config.keybindings.navigate.pomodoro) {
         if app.pomodoro_end.is_some() {
             app.pomodoro_end = None; // 끄기
@@ -381,13 +376,12 @@ fn handle_search_mode(app: &mut App, key: event::KeyEvent) {
             .map(|s| s.as_str())
             .collect::<Vec<&str>>()
             .join(" ");
-        if !query.trim().is_empty() {
-            if let Ok(results) = storage::search_entries(&app.config.data.log_path, &query) {
+        if !query.trim().is_empty()
+            && let Ok(results) = storage::search_entries(&app.config.data.log_path, &query) {
                 app.logs = results;
                 app.is_search_result = true;
                 app.logs_state.select(Some(0));
             }
-        }
         app.transition_to(InputMode::Navigate);
     } else {
         app.textarea.input(key);

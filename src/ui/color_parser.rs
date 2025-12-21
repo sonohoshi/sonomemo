@@ -23,15 +23,14 @@ pub fn parse_color(s: &str) -> Color {
         _ => {
             if s.contains(',') {
                 let parts: Vec<&str> = s.split(',').collect();
-                if parts.len() == 3 {
-                    if let (Ok(r), Ok(g), Ok(b)) = (
+                if parts.len() == 3
+                    && let (Ok(r), Ok(g), Ok(b)) = (
                         parts[0].trim().parse(),
                         parts[1].trim().parse(),
                         parts[2].trim().parse(),
                     ) {
                         return Color::Rgb(r, g, b);
                     }
-                }
             }
             Color::Reset
         }

@@ -94,13 +94,12 @@ fn parse_log_content(content: &str, path_str: &str) -> Vec<LogEntry> {
 
         let is_continuation = line.starts_with("  ") || line.starts_with('\t');
 
-        if is_continuation {
-            if let Some(last) = entries.last_mut() {
+        if is_continuation
+            && let Some(last) = entries.last_mut() {
                 last.content.push('\n');
                 last.content.push_str(line);
                 continue;
             }
-        }
 
         entries.push(LogEntry {
             content: line.to_string(),
@@ -152,11 +151,10 @@ pub fn get_last_file_pending_todos(log_path: &str) -> io::Result<Vec<String>> {
             let path = entry.path();
             if path.extension().and_then(|s| s.to_str()) == Some("md") {
                 // 오늘 파일은 제외 (지난 일만 가져오기 위함)
-                if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
-                    if stem != today {
+                if let Some(stem) = path.file_stem().and_then(|s| s.to_str())
+                    && stem != today {
                         file_paths.push(path);
                     }
-                }
             }
         }
         // 날짜순 정렬
@@ -198,8 +196,8 @@ pub fn get_all_tags(log_path: &str) -> io::Result<Vec<(String, usize)>> {
     if let Ok(entries) = fs::read_dir(dir) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.extension().and_then(|s| s.to_str()) == Some("md") {
-                if let Ok(content) = fs::read_to_string(&path) {
+            if path.extension().and_then(|s| s.to_str()) == Some("md")
+                && let Ok(content) = fs::read_to_string(&path) {
                     for line in content.lines() {
                         for word in line.split_whitespace() {
                             if word.starts_with('#') && word.len() > 1 {
@@ -208,7 +206,6 @@ pub fn get_all_tags(log_path: &str) -> io::Result<Vec<(String, usize)>> {
                         }
                     }
                 }
-            }
         }
     }
 
@@ -243,8 +240,8 @@ pub fn get_activity_stats(log_path: &str) -> io::Result<std::collections::HashMa
     if let Ok(entries) = fs::read_dir(dir) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.extension().and_then(|s| s.to_str()) == Some("md") {
-                if let Some(filename) = path.file_stem().and_then(|s| s.to_str()) {
+            if path.extension().and_then(|s| s.to_str()) == Some("md")
+                && let Some(filename) = path.file_stem().and_then(|s| s.to_str()) {
                     // 파일명(YYYY-MM-DD)을 키로 사용
                     if let Ok(content) = fs::read_to_string(&path) {
                         // 빈 줄이나 시스템 마커 제외하고 카운트
@@ -257,7 +254,6 @@ pub fn get_activity_stats(log_path: &str) -> io::Result<std::collections::HashMa
                         stats.insert(filename.to_string(), count);
                     }
                 }
-            }
         }
     }
     Ok(stats)
