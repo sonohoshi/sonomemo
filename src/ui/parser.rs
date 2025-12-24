@@ -39,12 +39,18 @@ pub fn tokenize(text: &str) -> Vec<LogToken<'_>> {
     current_text = trimmed_start;
 
     // 3. Extract Todo Status (Always after timestamp)
-    if let Some(stripped) = current_text.strip_prefix("- [ ]") {
-        tokens.push(LogToken::Todo { checked: false });
-        current_text = stripped;
-    } else if let Some(stripped) = current_text.strip_prefix("- [x]") {
-        tokens.push(LogToken::Todo { checked: true });
-        current_text = stripped;
+    // Regex: hyphen, optional whitespace, open bracket, (optional whitespace OR x/X), closing bracket
+    static TODO_REGEX: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+    let todo_regex = TODO_REGEX.get_or_init(|| {
+        regex::Regex::new(r"^-\s*\[(\s*|x|X)\]").unwrap()
+    });
+
+    if let Some(mat) = todo_regex.find(current_text) {
+        let captured_str = mat.as_str(); // e.g. "- [ ]" or "-[x]"
+        let is_checked = captured_str.contains('x') || captured_str.contains('X');
+        
+        tokens.push(LogToken::Todo { checked: is_checked });
+        current_text = &current_text[mat.end()..];
     }
 
     // 4. Tokenize Remaining Content (Words)
@@ -53,12 +59,6 @@ pub fn tokenize(text: &str) -> Vec<LogToken<'_>> {
         regex::Regex::new(r"https?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]")
             .unwrap()
     });
-
-    // We can't simply split_whitespace because we need to preserve spaces for exact rendering?
-    // Actually, preserving exact spacing is tricky with simple split.
-    // Let's iterate manually or split by whitespace but keep the separator.
-    // For simplicity compatible with previous logic, we split by whitespace and insert single space.
-    // BUT to be robust, let's treat the rest as a stream of words.
 
     // If we just consumed Todo, there might be a space after it.
     let content_len = current_text.len();
@@ -213,5 +213,28 @@ mod tests {
          assert_eq!(tokens[0], LogToken::Mood);
          assert_eq!(tokens[1], LogToken::Whitespace(" "));
          assert_eq!(tokens[2], LogToken::Text("Happy"));
+    }
+
+    #[test]
+    fn test_flexible_todo() {
+        // Tight: -[]
+        let tokens = tokenize("-[] Tight");
+        assert_eq!(tokens[0], LogToken::Todo { checked: false });
+        assert_eq!(tokens[1], LogToken::Whitespace(" "));
+        assert_eq!(tokens[2], LogToken::Text("Tight"));
+
+        // Wide: - [   ]
+        let tokens = tokenize("- [   ] Wide");
+        assert_eq!(tokens[0], LogToken::Todo { checked: false });
+        assert_eq!(tokens[1], LogToken::Whitespace(" "));
+        assert_eq!(tokens[2], LogToken::Text("Wide"));
+
+        // With Timestamp
+        let tokens = tokenize("[12:00] -[x] Done");
+        assert_eq!(tokens[0], LogToken::Timestamp("[12:00]"));
+        assert_eq!(tokens[1], LogToken::Whitespace(" "));
+        assert_eq!(tokens[2], LogToken::Todo { checked: true });
+        assert_eq!(tokens[3], LogToken::Whitespace(" "));
+        assert_eq!(tokens[4], LogToken::Text("Done"));
     }
 }
