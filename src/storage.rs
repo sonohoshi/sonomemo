@@ -109,26 +109,23 @@ fn parse_log_content(content: &str, path_str: &str) -> Vec<LogEntry> {
     entries
 }
 
+// ... imports
+// Remove regex import if not used elsewhere (it was only used here)
+// use regex::Regex; 
+use crate::ui::parser;
+
+// ...
+
 pub fn toggle_todo_status(entry: &LogEntry) -> io::Result<()> {
-    // 파일을 전부 읽어서 해당 라인만 수정 후 다시 저장
-    // 대용량 파일에는 비효율적이나, 일일 메모장 스케일에는 충분함
     let content = fs::read_to_string(&entry.file_path)?;
     let mut lines: Vec<String> = content.lines().map(|s| s.to_string()).collect();
 
     if entry.line_number < lines.len() {
-        let line = &lines[entry.line_number];
-        let new_line = if line.contains("- [ ]") {
-            line.replace("- [ ]", "- [x]")
-        } else if line.contains("- [x]") {
-            line.replace("- [x]", "- [ ]")
-        } else {
-            line.clone()
-        };
-        lines[entry.line_number] = new_line;
+        // Use shared parser logic to toggle
+        lines[entry.line_number] = parser::toggle_checkbox(&lines[entry.line_number]);
     }
 
     let mut new_content = lines.join("\n");
-    // 파일 끝에 개행 문자가 없으면 추가 (append 시 문제 방지)
     if !new_content.ends_with('\n') {
         new_content.push('\n');
     }
@@ -149,7 +146,6 @@ pub fn get_last_file_pending_todos(log_path: &str) -> io::Result<Vec<String>> {
         for entry in entries.flatten() {
             let path = entry.path();
             if path.extension().and_then(|s| s.to_str()) == Some("md") {
-                // 오늘 파일은 제외 (지난 일만 가져오기 위함)
                 if let Some(stem) = path.file_stem().and_then(|s| s.to_str())
                     && stem != today
                 {
@@ -157,26 +153,15 @@ pub fn get_last_file_pending_todos(log_path: &str) -> io::Result<Vec<String>> {
                 }
             }
         }
-        // 날짜순 정렬
         file_paths.sort();
 
-        // 가장 최신(마지막) 파일 하나만 확인
         if let Some(last_path) = file_paths.last() {
             let mut todos = Vec::new();
             if let Ok(content) = fs::read_to_string(last_path) {
                 for line in content.lines() {
-                    if line.contains("- [ ]") {
-                        // 타임스탬프 "[HH:MM:SS] " 제거
-                        let clean_line = if line.trim_start().starts_with('[') {
-                            if let Some(idx) = line.find("] ") {
-                                &line[idx + 2..]
-                            } else {
-                                line
-                            }
-                        } else {
-                            line
-                        };
-                        todos.push(clean_line.trim().to_string());
+                    // Use shared parser logic to extract pending todos
+                    if let Some(todo_content) = parser::extract_pending_content(line) {
+                        todos.push(todo_content);
                     }
                 }
             }

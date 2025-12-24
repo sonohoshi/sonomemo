@@ -130,28 +130,29 @@ pub fn ui(f: &mut Frame, app: &mut App) {
     let todos: Vec<ListItem> = app
         .logs
         .iter()
-        .filter(|entry| entry.content.contains("- [ ]"))
-        .map(|entry| {
-            // 타임스탬프 등 제거하고 깔끔하게 보여주기
-            let content = &entry.content;
-            let display_text = if let Some(idx) = content.find("- [ ]") {
-                &content[idx..] // "- [ ] 내용" 부터 표시
-            } else {
-                content
-            };
-
-            // 줄바꿈 처리
-            let wrapped = wrap(display_text, todo_area_width);
-            let mut lines = Vec::new();
-            for (i, line) in wrapped.iter().enumerate() {
-                if i == 0 {
-                    lines.push(Line::from(line.to_string()));
-                } else {
-                    // 체크박스(- [ ] ) 길이만큼 들여쓰기
-                    lines.push(Line::from(format!("      {}", line)));
+        .filter_map(|entry| {
+            // Use shared parser logic to check if it's a pending todo
+            if let Some(content) = parser::extract_pending_content(&entry.content) {
+                // Reconstruct a displayable todo line (e.g., "- [ ] content")
+                // Or just show the content? The original code showed "- [ ] content".
+                // Let's standardise it to "- [ ] content" for the sidebar.
+                let display_text = format!("- [ ] {}", content);
+                
+                // 줄바꿈 처리
+                let wrapped = wrap(&display_text, todo_area_width);
+                let mut lines = Vec::new();
+                for (i, line) in wrapped.iter().enumerate() {
+                    if i == 0 {
+                        lines.push(Line::from(line.to_string()));
+                    } else {
+                        // 체크박스(- [ ] ) 길이만큼 들여쓰기
+                        lines.push(Line::from(format!("      {}", line)));
+                    }
                 }
+                Some(ListItem::new(Text::from(lines)))
+            } else {
+                None
             }
-            ListItem::new(Text::from(lines))
         })
         .collect();
 

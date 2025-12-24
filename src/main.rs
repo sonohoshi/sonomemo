@@ -338,15 +338,14 @@ fn handle_normal_mode(app: &mut App, key: event::KeyEvent) {
             && i < app.logs.len()
         {
             let entry = &app.logs[i];
-            if entry.content.contains("- [ ]") || entry.content.contains("- [x]") {
-                let _ = storage::toggle_todo_status(entry);
-                if app.is_search_result {
-                    app.update_logs(); // TODO: Maintain search, but reloading is safer
-                } else {
-                    app.update_logs();
-                }
-                app.logs_state.select(Some(i));
+            // Just call toggle logic; let it decide if it's a todo
+            let _ = storage::toggle_todo_status(entry);
+            if app.is_search_result {
+                app.update_logs();
+            } else {
+                app.update_logs();
             }
+            app.logs_state.select(Some(i));
         }
     } else if key_match(&key, &app.config.keybindings.navigate.pomodoro) {
         if app.pomodoro_end.is_some() {

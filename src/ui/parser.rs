@@ -42,7 +42,7 @@ pub fn tokenize(text: &str) -> Vec<LogToken<'_>> {
     // Regex: hyphen, optional whitespace, open bracket, (optional whitespace OR x/X), closing bracket
     static TODO_REGEX: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
     let todo_regex = TODO_REGEX.get_or_init(|| {
-        regex::Regex::new(r"^-\s*\[(\s*|x|X)\]").unwrap()
+        regex::Regex::new(r"-\s*\[(\s*|x|X)\]").unwrap()
     });
 
     if let Some(mat) = todo_regex.find(current_text) {
@@ -166,6 +166,70 @@ pub fn render_tokens<'a>(tokens: Vec<LogToken<'a>>, theme: &Theme) -> Line<'stat
     Line::from(spans)
 }
 
+/// Toggles the checkbox state of a log line (if it has one).
+/// Returns the new line string.
+pub fn toggle_checkbox(text: &str) -> String {
+    static TODO_REGEX: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+    let todo_regex = TODO_REGEX.get_or_init(|| {
+        regex::Regex::new(r"-\s*\[(\s*|x|X)\]").unwrap()
+    });
+
+    // We can't use tokenize() here easily because we want to preserve exact whitespace 
+    // of non-todo parts, which tokenize() might slightly normalize or split separate from structure.
+    // Regex replacement is safer for minimal intrusion.
+    
+    if let Some(mat) = todo_regex.find(text) {
+        let captured = mat.as_str();
+        let is_checked = captured.contains('x') || captured.contains('X');
+        let replacement = if is_checked { "- [ ]" } else { "- [x]" };
+        
+        let mut new_text = String::with_capacity(text.len());
+        new_text.push_str(&text[..mat.start()]);
+        new_text.push_str(replacement);
+        new_text.push_str(&text[mat.end()..]);
+        return new_text;
+    }
+    
+    text.to_string()
+}
+
+/// Extracts the content of an unchecked todo item.
+/// Returns Some(content) if it is a Todo and is NOT checked.
+/// Returns None otherwise.
+pub fn extract_pending_content(text: &str) -> Option<String> {
+    let tokens = tokenize(text);
+    let mut is_todo = false;
+    let mut is_checked = false;
+    let mut content = String::new();
+    
+    for token in tokens {
+        match token {
+            LogToken::Todo { checked } => {
+                is_todo = true;
+                is_checked = checked;
+            }
+            LogToken::Text(t) | LogToken::Tag(t) | LogToken::Url(t) | LogToken::Whitespace(t) => {
+                // Only collect content AFTER the todo token
+                if is_todo {
+                    content.push_str(t);
+                }
+            }
+            LogToken::Mood => { // Mood can be part of content?
+                 if is_todo {
+                     content.push_str("Mood:");
+                 }
+            }
+            _ => {}
+        }
+    }
+    
+    if is_todo && !is_checked {
+        Some(content.trim().to_string())
+    } else {
+        None
+    }
+}
+
 /// Main entry point (Facade)
 pub fn parse_log_line(text: &str, theme: &Theme) -> Line<'static> {
     let tokens = tokenize(text);
@@ -236,5 +300,30 @@ mod tests {
         assert_eq!(tokens[2], LogToken::Todo { checked: true });
         assert_eq!(tokens[3], LogToken::Whitespace(" "));
         assert_eq!(tokens[4], LogToken::Text("Done"));
+
+        // With Timestamp and tight
+        let tokens = tokenize("[12:00] -[] noDone");
+        assert_eq!(tokens[0], LogToken::Timestamp("[12:00]"));
+        assert_eq!(tokens[1], LogToken::Whitespace(" "));
+        assert_eq!(tokens[2], LogToken::Todo { checked: false });
+        assert_eq!(tokens[3], LogToken::Whitespace(" "));
+        assert_eq!(tokens[4], LogToken::Text("noDone"));
+    }
+
+    #[test]
+    fn test_toggle_checkbox_full_line() {
+        // This simulates the string read from file
+        let line = "[00:53:21] - [ ] 아니 안되잖아!!!!!!!!";
+        let toggled = toggle_checkbox(line);
+        assert_eq!(toggled, "[00:53:21] - [x] 아니 안되잖아!!!!!!!!");
+
+        let line_checked = "[00:53:21] - [x] Done";
+        let toggled_back = toggle_checkbox(line_checked);
+        assert_eq!(toggled_back, "[00:53:21] - [ ] Done");
+        
+        // Flexible cases
+        let line_tight = "[12:34] -[] Tight";
+        let toggled_tight = toggle_checkbox(line_tight);
+        assert_eq!(toggled_tight, "[12:34] - [x] Tight"); // Normalized to wide
     }
 }
