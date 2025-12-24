@@ -398,14 +398,17 @@ fn handle_editing_mode(app: &mut App, key: event::KeyEvent) {
         app.transition_to(InputMode::Navigate);
     } else if key_match(&key, &app.config.keybindings.editing.newline) {
         app.textarea.insert_newline();
-    } else if key_match(&key, &app.config.keybindings.editing.save) {
-        let input = app
-            .textarea
-            .lines()
+    } else if key_match(&key, &app.config.keybindings.editing.save)
+        || (key.code == event::KeyCode::Enter && !key.modifiers.contains(event::KeyModifiers::SHIFT))
+    {
+        // 텍스트 영역의 모든 줄을 가져와서 저장
+        let lines = app.textarea.lines().to_vec();
+        let input = lines
             .iter()
             .map(|s| s.as_str())
             .collect::<Vec<&str>>()
             .join("\n           ");
+
         if !input.trim().is_empty() {
             if let Err(e) = storage::append_entry(&app.config.data.log_path, &input) {
                 eprintln!("Error saving: {}", e);
@@ -413,7 +416,7 @@ fn handle_editing_mode(app: &mut App, key: event::KeyEvent) {
             app.update_logs();
         }
 
-        // 텍스트 영역 초기화
+        // 텍스트 영역 초기화 (커서 위치 상관없이 전체 초기화)
         app.textarea = tui_textarea::TextArea::default();
         app.transition_to(InputMode::Editing);
     } else {
