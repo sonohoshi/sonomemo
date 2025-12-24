@@ -28,9 +28,10 @@ pub fn parse_color(s: &str) -> Color {
                         parts[0].trim().parse(),
                         parts[1].trim().parse(),
                         parts[2].trim().parse(),
-                    ) {
-                        return Color::Rgb(r, g, b);
-                    }
+                    )
+                {
+                    return Color::Rgb(r, g, b);
+                }
             }
             Color::Reset
         }

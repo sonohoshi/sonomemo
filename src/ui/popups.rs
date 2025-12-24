@@ -203,8 +203,8 @@ pub fn render_path_popup(f: &mut Frame, app: &mut App) {
     // 1. Log Path
     let log_path_str = if let Ok(abs_path) = std::fs::canonicalize(&app.config.data.log_path) {
         let s = abs_path.to_string_lossy().to_string();
-        if s.starts_with(r"\\?\") {
-            s[4..].to_string()
+        if let Some(stripped) = s.strip_prefix(r"\\?\") {
+            stripped.to_string()
         } else {
             s
         }
@@ -217,8 +217,8 @@ pub fn render_path_popup(f: &mut Frame, app: &mut App) {
     let config_path = std::path::Path::new("config.toml");
     let config_path_str = if let Ok(abs_path) = std::fs::canonicalize(config_path) {
         let s = abs_path.to_string_lossy().to_string();
-        if s.starts_with(r"\\?\") {
-            s[4..].to_string()
+        if let Some(stripped) = s.strip_prefix(r"\\?\") {
+            stripped.to_string()
         } else {
             s
         }

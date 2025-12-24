@@ -63,9 +63,11 @@ fn is_match(key: &KeyEvent, binding: &str) -> bool {
 
         if let KeyCode::Char(c) = key.code
             && let KeyCode::Char(tc) = target_code
-                && c.to_lowercase().next() == Some(tc) && key.modifiers.contains(target_modifiers) {
-                    return true;
-                }
+            && c.to_lowercase().next() == Some(tc)
+            && key.modifiers.contains(target_modifiers)
+        {
+            return true;
+        }
         return false;
     }
 
@@ -260,13 +262,14 @@ impl Config {
     pub fn load() -> Self {
         let config_path = Path::new("config.toml");
         if config_path.exists()
-            && let Ok(content) = fs::read_to_string(config_path) {
-                if let Ok(config) = toml::from_str(&content) {
-                    return config;
-                } else {
-                    eprintln!("Failed to parse config.toml, using defaults.");
-                }
+            && let Ok(content) = fs::read_to_string(config_path)
+        {
+            if let Ok(config) = toml::from_str(&content) {
+                return config;
+            } else {
+                eprintln!("Failed to parse config.toml, using defaults.");
             }
+        }
         Self::default()
     }
 }

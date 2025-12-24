@@ -52,7 +52,7 @@ pub fn parse_log_line(text: &str, theme: &Theme) -> Line<'static> {
 
         let content = content_part;
 
-        // TODO 체크박스 처리
+        // 체크박스 처리
         let (content, todo_prefix) = if let Some(stripped) = content.strip_prefix("- [ ] ") {
             let color = parse_color(&theme.todo_wip);
             spans.push(Span::styled("⬜ ", Style::default().fg(color))); // 미완료 이모지
