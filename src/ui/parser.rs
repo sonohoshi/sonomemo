@@ -1,0 +1,217 @@
+use crate::config::Theme;
+use crate::ui::color_parser::parse_color;
+use ratatui::{
+    style::{Color, Modifier, Style},
+    text::{Line, Span},
+};
+
+/// Represents semantic parts of a log line.
+#[derive(Debug, PartialEq, Clone)]
+pub enum LogToken<'a> {
+    Timestamp(&'a str),     // [HH:MM:SS]
+    Todo { checked: bool }, // - [ ] or - [x]
+    Mood,                   // Mood:
+    Tag(&'a str),           // #tag
+    Url(&'a str),           // http://...
+    Text(&'a str),          // Normal text
+    Whitespace(&'a str),    // Space or other whitespace
+}
+
+/// Tokenizes a raw log line into a list of semantic tokens.
+pub fn tokenize(text: &str) -> Vec<LogToken<'_>> {
+    let mut tokens = Vec::new();
+    let mut current_text = text;
+
+    // 1. Extract Timestamp (Always at the start)
+    if current_text.starts_with('[') {
+        if let Some(end_idx) = current_text.find(']') {
+            tokens.push(LogToken::Timestamp(&current_text[..=end_idx]));
+            current_text = &current_text[end_idx + 1..];
+        }
+    }
+
+    // 2. Extract Leading Whitespace (needed to separate timestamp from content)
+    let trimmed_start = current_text.trim_start();
+    let leading_spaces = &current_text[..current_text.len() - trimmed_start.len()];
+    if !leading_spaces.is_empty() {
+        tokens.push(LogToken::Whitespace(leading_spaces));
+    }
+    current_text = trimmed_start;
+
+    // 3. Extract Todo Status (Always after timestamp)
+    if let Some(stripped) = current_text.strip_prefix("- [ ]") {
+        tokens.push(LogToken::Todo { checked: false });
+        current_text = stripped;
+    } else if let Some(stripped) = current_text.strip_prefix("- [x]") {
+        tokens.push(LogToken::Todo { checked: true });
+        current_text = stripped;
+    }
+
+    // 4. Tokenize Remaining Content (Words)
+    static URL_REGEX: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+    let url_regex = URL_REGEX.get_or_init(|| {
+        regex::Regex::new(r"https?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]")
+            .unwrap()
+    });
+
+    // We can't simply split_whitespace because we need to preserve spaces for exact rendering?
+    // Actually, preserving exact spacing is tricky with simple split.
+    // Let's iterate manually or split by whitespace but keep the separator.
+    // For simplicity compatible with previous logic, we split by whitespace and insert single space.
+    // BUT to be robust, let's treat the rest as a stream of words.
+
+    // If we just consumed Todo, there might be a space after it.
+    let content_len = current_text.len();
+    let content_trimmed = current_text.trim_start();
+    let prefix_spaces = &current_text[..content_len - content_trimmed.len()];
+    if !prefix_spaces.is_empty() {
+         tokens.push(LogToken::Whitespace(prefix_spaces));
+    }
+    current_text = content_trimmed;
+    
+    // Now iterate over words
+    // Note: split_whitespace() loses the exact original whitespace chars (tabs vs spaces),
+    // but correct UI rendering usually normalizes this anyway.
+    // To match previous behavior precisely:
+    
+    let words: Vec<&str> = current_text.split(' ').collect();
+    for (i, word) in words.iter().enumerate() {
+        if i > 0 {
+            tokens.push(LogToken::Whitespace(" "));
+        }
+        
+        if word.is_empty() {
+            continue;
+        }
+
+        if word.starts_with('#') {
+            tokens.push(LogToken::Tag(word));
+        } else if *word == "Mood:" {
+            tokens.push(LogToken::Mood);
+        } else if let Some(mat) = url_regex.find(word) {
+            let start = mat.start();
+            let end = mat.end();
+            
+            if start > 0 {
+                tokens.push(LogToken::Text(&word[..start]));
+            }
+            tokens.push(LogToken::Url(&word[start..end]));
+            if end < word.len() {
+                tokens.push(LogToken::Text(&word[end..]));
+            }
+        } else {
+            tokens.push(LogToken::Text(word));
+        }
+    }
+
+    tokens
+}
+
+/// Renders a list of tokens into a Ratatui Line using the given theme.
+pub fn render_tokens<'a>(tokens: Vec<LogToken<'a>>, theme: &Theme) -> Line<'static> {
+    let mut spans = Vec::new();
+    
+    // Context state
+    let mut is_todo_item = false;
+
+    for token in tokens {
+        match token {
+            LogToken::Timestamp(ts) => {
+                let color = parse_color(&theme.timestamp);
+                spans.push(Span::styled(ts.to_string(), Style::default().fg(color)));
+            }
+            LogToken::Whitespace(ws) => {
+                spans.push(Span::raw(ws.to_string()));
+            }
+            LogToken::Todo { checked } => {
+                is_todo_item = true;
+                 if checked {
+                    let color = parse_color(&theme.todo_done);
+                    spans.push(Span::styled("✅", Style::default().fg(color)));
+                } else {
+                    let color = parse_color(&theme.todo_wip);
+                    spans.push(Span::styled("⬜", Style::default().fg(color)));
+                }
+            }
+            LogToken::Mood => {
+                let color = parse_color(&theme.mood);
+                spans.push(Span::styled(
+                    "🎭 Mood:",
+                    Style::default().fg(color).add_modifier(Modifier::ITALIC),
+                ));
+            }
+            LogToken::Tag(tag) => {
+                let color = parse_color(&theme.tag);
+                spans.push(Span::styled(
+                    tag.to_string(),
+                    Style::default().fg(color).add_modifier(Modifier::BOLD),
+                ));
+            }
+            LogToken::Url(url) => {
+                spans.push(Span::styled(
+                    url.to_string(),
+                    Style::default().fg(Color::Blue).add_modifier(Modifier::UNDERLINED),
+                ));
+            }
+            LogToken::Text(text) => {
+                let mut style = Style::default();
+                if is_todo_item {
+                    style = style.fg(Color::Reset);
+                }
+                spans.push(Span::styled(text.to_string(), style));
+            }
+        }
+    }
+
+    Line::from(spans)
+}
+
+/// Main entry point (Facade)
+pub fn parse_log_line(text: &str, theme: &Theme) -> Line<'static> {
+    let tokens = tokenize(text);
+    render_tokens(tokens, theme)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_tokenize_complex() {
+        let text = "[12:00] - [ ] Study #coding http://rust-lang.org";
+        let tokens = tokenize(text);
+
+        assert_eq!(tokens[0], LogToken::Timestamp("[12:00]"));
+        assert_eq!(tokens[1], LogToken::Whitespace(" ")); // Space after timestamp
+        assert_eq!(tokens[2], LogToken::Todo { checked: false });
+        assert_eq!(tokens[3], LogToken::Whitespace(" ")); // Space after todo
+        assert_eq!(tokens[4], LogToken::Text("Study"));
+        assert_eq!(tokens[5], LogToken::Whitespace(" "));
+        assert_eq!(tokens[6], LogToken::Tag("#coding"));
+        assert_eq!(tokens[7], LogToken::Whitespace(" "));
+        assert_eq!(tokens[8], LogToken::Url("http://rust-lang.org"));
+    }
+
+    #[test]
+    fn test_tokenize_simple() {
+        let text = "Just plain text";
+        let tokens = tokenize(text);
+        
+        // "Just plain text" -> split by space -> "Just", "plain", "text"
+        // Interleaved with whitespace tokens
+        assert_eq!(tokens[0], LogToken::Text("Just"));
+        assert_eq!(tokens[1], LogToken::Whitespace(" "));
+        assert_eq!(tokens[2], LogToken::Text("plain"));
+        assert_eq!(tokens[3], LogToken::Whitespace(" "));
+        assert_eq!(tokens[4], LogToken::Text("text"));
+    }
+    
+    #[test]
+    fn test_tokenize_mood() {
+         let text = "Mood: Happy";
+         let tokens = tokenize(text);
+         assert_eq!(tokens[0], LogToken::Mood);
+         assert_eq!(tokens[1], LogToken::Whitespace(" "));
+         assert_eq!(tokens[2], LogToken::Text("Happy"));
+    }
+}

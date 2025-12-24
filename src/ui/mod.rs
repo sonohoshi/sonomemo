@@ -15,6 +15,7 @@ use ratatui::style::Stylize;
 
 pub mod color_parser;
 pub mod components;
+pub mod parser;
 pub mod popups;
 
 use components::parse_log_line;
