@@ -1,5 +1,5 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 
@@ -74,7 +74,7 @@ fn is_match(key: &KeyEvent, binding: &str) -> bool {
     key.modifiers.contains(target_modifiers)
 }
 
-#[derive(Debug, Deserialize, Clone, Default)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub struct Config {
     #[serde(default)]
     pub placeholders: Placeholders,
@@ -88,26 +88,26 @@ pub struct Config {
     pub data: DataConfig,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct DataConfig {
     pub log_path: String,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Placeholders {
     pub navigate: String,
     pub editing: String,
     pub search: String,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct HelpMessages {
     pub navigate: String,
     pub editing: String,
     pub search: String,
 }
 
-#[derive(Debug, Deserialize, Clone, Default)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub struct KeyBindings {
     #[serde(default)]
     pub navigate: NavigateBindings,
@@ -119,7 +119,7 @@ pub struct KeyBindings {
     pub popup: PopupBindings,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct NavigateBindings {
     pub quit: Vec<String>,
     pub tags: Vec<String>,
@@ -131,20 +131,20 @@ pub struct NavigateBindings {
     pub path: Vec<String>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct EditingBindings {
     pub save: Vec<String>,    // Enter
     pub newline: Vec<String>, // Shift+Enter
     pub cancel: Vec<String>,  // Esc
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SearchBindings {
     pub submit: Vec<String>,
     pub cancel: Vec<String>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct PopupBindings {
     pub confirm: Vec<String>,
     pub cancel: Vec<String>,
@@ -152,7 +152,7 @@ pub struct PopupBindings {
     pub down: Vec<String>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Theme {
     pub border_default: String,
     pub border_editing: String,
@@ -188,7 +188,7 @@ impl Default for HelpMessages {
     fn default() -> Self {
         Self {
             navigate:
-                " [i] Edit  [t] Tag  [?] Search  [Enter] Toggle  [p] Pomodoro  [g] Graph  [q] Quit "
+                " [i] Edit  [t] Tag  [?] Search  [Enter] Toggle  [p] Pomodoro  [g] Graph [l] PATH [q] Quit "
                     .to_string(),
             editing: " [Esc] Navigate Mode  [Enter] Save Memo  [Shift+Enter] New Line ".to_string(),
             search: " [Esc] Reset Search  [Enter] Filter ".to_string(),
@@ -261,15 +261,23 @@ impl Default for Theme {
 impl Config {
     pub fn load() -> Self {
         let config_path = Path::new("config.toml");
-        if config_path.exists()
-            && let Ok(content) = fs::read_to_string(config_path)
-        {
-            if let Ok(config) = toml::from_str(&content) {
-                return config;
-            } else {
-                eprintln!("Failed to parse config.toml, using defaults.");
+        if config_path.exists() {
+            if let Ok(content) = fs::read_to_string(config_path) {
+                if let Ok(config) = toml::from_str(&content) {
+                    return config;
+                } else {
+                    eprintln!("Failed to parse config.toml, using defaults.");
+                }
+            }
+            return Self::default();
+        }
+
+        let default_config = Self::default();
+        if let Ok(toml_str) = toml::to_string_pretty(&default_config) {
+            if let Err(e) = fs::write(config_path, toml_str) {
+                eprintln!("Failed to write default config: {}", e);
             }
         }
-        Self::default()
+        default_config
     }
 }
