@@ -26,13 +26,14 @@
 - **Data**: 로컬 Markdown 파일 (`logs/YYYY-MM-DD.md` or configurable `data.log_path`)
 
 ## 4. 아키텍처 및 주요 파일 (Files)
-- **설정 (`config.toml`)**: 사용자 정의 키 바인딩, 테마 색상, 로그 경로(`data.log_path`).
+- **설정 (`config.toml`)**: 사용자 정의 키 바인딩, 테마 색상, 로그 경로. (없으면 실행 시 자동 생성됨)
 - **진입점 (`src/main.rs`)**:
     - 앱 초기화, 메인 이벤트 루프.
     - **중요**: macOS `Shift+Enter` 지원을 위해 `KeyboardEnhancementFlags`가 활성화되어 있음.
 - **설정 로직 (`src/config.rs`)**: TOML 파싱, 키 매칭 헬퍼(`key_match`) 함수 제공.
 - **UI (`src/ui/`)**:
     - `mod.rs`: 전체 레이아웃 (로그 뷰, 할 일, 입력창).
+    - `parser.rs`: 로그 라인 파싱(`tokenize`, `try_parse_todo`) 및 포맷팅(`format_todo`).
     - `color_parser.rs`: 테마 색상 문자열 파싱.
 - **데이터 (`src/storage.rs`)**: 파일 I/O 및 파싱 로직.
 
