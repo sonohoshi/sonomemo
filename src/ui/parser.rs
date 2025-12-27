@@ -17,6 +17,28 @@ pub enum LogToken<'a> {
     Whitespace(&'a str),    // Space or other whitespace
 }
 
+/// Tries to match a todo checkbox at the start of the string (e.g. "- [ ]" or "- [x]").
+/// Returns Some((is_checked, matched_length)) if found.
+pub fn try_parse_todo(text: &str) -> Option<(bool, usize)> {
+    static TODO_REGEX: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+    let todo_regex = TODO_REGEX.get_or_init(|| regex::Regex::new(r"-\s*\[(\s*|x|X)\]").unwrap());
+
+    if let Some(mat) = todo_regex.find(text) {
+        // We use find() which finds the leftmost match.
+        // In the context of the parser, we expect this to be called when we are looking for a todo.
+        let captured_str = mat.as_str();
+        let is_checked = captured_str.contains('x') || captured_str.contains('X');
+        return Some((is_checked, mat.end()));
+    }
+    None
+}
+
+/// Formats a todo item string with the standard checkbox prefix.
+pub fn format_todo(content: &str, checked: bool) -> String {
+    let checkbox = if checked { "[x]" } else { "[ ]" };
+    format!("- {} {}", checkbox, content)
+}
+
 /// Tokenizes a raw log line into a list of semantic tokens.
 pub fn tokenize(text: &str) -> Vec<LogToken<'_>> {
     let mut tokens = Vec::new();
@@ -40,24 +62,16 @@ pub fn tokenize(text: &str) -> Vec<LogToken<'_>> {
 
     // 3. Extract Todo Status (Always after timestamp)
     // Regex: hyphen, optional whitespace, open bracket, (optional whitespace OR x/X), closing bracket
-    static TODO_REGEX: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
-    let todo_regex = TODO_REGEX.get_or_init(|| {
-        regex::Regex::new(r"-\s*\[(\s*|x|X)\]").unwrap()
-    });
-
-    if let Some(mat) = todo_regex.find(current_text) {
-        let captured_str = mat.as_str(); // e.g. "- [ ]" or "-[x]"
-        let is_checked = captured_str.contains('x') || captured_str.contains('X');
-        
-        tokens.push(LogToken::Todo { checked: is_checked });
-        current_text = &current_text[mat.end()..];
+    // 3. Extract Todo Status (Always after timestamp)
+    if let Some((checked, len)) = try_parse_todo(current_text) {
+        tokens.push(LogToken::Todo { checked });
+        current_text = &current_text[len..];
     }
 
     // 4. Tokenize Remaining Content (Words)
     static URL_REGEX: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
     let url_regex = URL_REGEX.get_or_init(|| {
-        regex::Regex::new(r"https?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]")
-            .unwrap()
+        regex::Regex::new(r"https?://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]").unwrap()
     });
 
     // If we just consumed Todo, there might be a space after it.
@@ -65,21 +79,21 @@ pub fn tokenize(text: &str) -> Vec<LogToken<'_>> {
     let content_trimmed = current_text.trim_start();
     let prefix_spaces = &current_text[..content_len - content_trimmed.len()];
     if !prefix_spaces.is_empty() {
-         tokens.push(LogToken::Whitespace(prefix_spaces));
+        tokens.push(LogToken::Whitespace(prefix_spaces));
     }
     current_text = content_trimmed;
-    
+
     // Now iterate over words
     // Note: split_whitespace() loses the exact original whitespace chars (tabs vs spaces),
     // but correct UI rendering usually normalizes this anyway.
     // To match previous behavior precisely:
-    
+
     let words: Vec<&str> = current_text.split(' ').collect();
     for (i, word) in words.iter().enumerate() {
         if i > 0 {
             tokens.push(LogToken::Whitespace(" "));
         }
-        
+
         if word.is_empty() {
             continue;
         }
@@ -91,7 +105,7 @@ pub fn tokenize(text: &str) -> Vec<LogToken<'_>> {
         } else if let Some(mat) = url_regex.find(word) {
             let start = mat.start();
             let end = mat.end();
-            
+
             if start > 0 {
                 tokens.push(LogToken::Text(&word[..start]));
             }
@@ -110,7 +124,7 @@ pub fn tokenize(text: &str) -> Vec<LogToken<'_>> {
 /// Renders a list of tokens into a Ratatui Line using the given theme.
 pub fn render_tokens<'a>(tokens: Vec<LogToken<'a>>, theme: &Theme) -> Line<'static> {
     let mut spans = Vec::new();
-    
+
     // Context state
     let mut is_todo_item = false;
 
@@ -125,7 +139,7 @@ pub fn render_tokens<'a>(tokens: Vec<LogToken<'a>>, theme: &Theme) -> Line<'stat
             }
             LogToken::Todo { checked } => {
                 is_todo_item = true;
-                 if checked {
+                if checked {
                     let color = parse_color(&theme.todo_done);
                     spans.push(Span::styled("✅", Style::default().fg(color)));
                 } else {
@@ -150,7 +164,9 @@ pub fn render_tokens<'a>(tokens: Vec<LogToken<'a>>, theme: &Theme) -> Line<'stat
             LogToken::Url(url) => {
                 spans.push(Span::styled(
                     url.to_string(),
-                    Style::default().fg(Color::Blue).add_modifier(Modifier::UNDERLINED),
+                    Style::default()
+                        .fg(Color::Blue)
+                        .add_modifier(Modifier::UNDERLINED),
                 ));
             }
             LogToken::Text(text) => {
@@ -170,26 +186,24 @@ pub fn render_tokens<'a>(tokens: Vec<LogToken<'a>>, theme: &Theme) -> Line<'stat
 /// Returns the new line string.
 pub fn toggle_checkbox(text: &str) -> String {
     static TODO_REGEX: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
-    let todo_regex = TODO_REGEX.get_or_init(|| {
-        regex::Regex::new(r"-\s*\[(\s*|x|X)\]").unwrap()
-    });
+    let todo_regex = TODO_REGEX.get_or_init(|| regex::Regex::new(r"-\s*\[(\s*|x|X)\]").unwrap());
 
-    // We can't use tokenize() here easily because we want to preserve exact whitespace 
+    // We can't use tokenize() here easily because we want to preserve exact whitespace
     // of non-todo parts, which tokenize() might slightly normalize or split separate from structure.
     // Regex replacement is safer for minimal intrusion.
-    
+
     if let Some(mat) = todo_regex.find(text) {
         let captured = mat.as_str();
         let is_checked = captured.contains('x') || captured.contains('X');
         let replacement = if is_checked { "- [ ]" } else { "- [x]" };
-        
+
         let mut new_text = String::with_capacity(text.len());
         new_text.push_str(&text[..mat.start()]);
         new_text.push_str(replacement);
         new_text.push_str(&text[mat.end()..]);
         return new_text;
     }
-    
+
     text.to_string()
 }
 
@@ -201,7 +215,7 @@ pub fn extract_pending_content(text: &str) -> Option<String> {
     let mut is_todo = false;
     let mut is_checked = false;
     let mut content = String::new();
-    
+
     for token in tokens {
         match token {
             LogToken::Todo { checked } => {
@@ -214,15 +228,16 @@ pub fn extract_pending_content(text: &str) -> Option<String> {
                     content.push_str(t);
                 }
             }
-            LogToken::Mood => { // Mood can be part of content?
-                 if is_todo {
-                     content.push_str("Mood:");
-                 }
+            LogToken::Mood => {
+                // Mood can be part of content?
+                if is_todo {
+                    content.push_str("Mood:");
+                }
             }
             _ => {}
         }
     }
-    
+
     if is_todo && !is_checked {
         Some(content.trim().to_string())
     } else {
@@ -260,7 +275,7 @@ mod tests {
     fn test_tokenize_simple() {
         let text = "Just plain text";
         let tokens = tokenize(text);
-        
+
         // "Just plain text" -> split by space -> "Just", "plain", "text"
         // Interleaved with whitespace tokens
         assert_eq!(tokens[0], LogToken::Text("Just"));
@@ -269,14 +284,14 @@ mod tests {
         assert_eq!(tokens[3], LogToken::Whitespace(" "));
         assert_eq!(tokens[4], LogToken::Text("text"));
     }
-    
+
     #[test]
     fn test_tokenize_mood() {
-         let text = "Mood: Happy";
-         let tokens = tokenize(text);
-         assert_eq!(tokens[0], LogToken::Mood);
-         assert_eq!(tokens[1], LogToken::Whitespace(" "));
-         assert_eq!(tokens[2], LogToken::Text("Happy"));
+        let text = "Mood: Happy";
+        let tokens = tokenize(text);
+        assert_eq!(tokens[0], LogToken::Mood);
+        assert_eq!(tokens[1], LogToken::Whitespace(" "));
+        assert_eq!(tokens[2], LogToken::Text("Happy"));
     }
 
     #[test]
@@ -320,7 +335,7 @@ mod tests {
         let line_checked = "[00:53:21] - [x] Done";
         let toggled_back = toggle_checkbox(line_checked);
         assert_eq!(toggled_back, "[00:53:21] - [ ] Done");
-        
+
         // Flexible cases
         let line_tight = "[12:34] -[] Tight";
         let toggled_tight = toggle_checkbox(line_tight);

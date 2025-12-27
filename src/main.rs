@@ -229,7 +229,8 @@ fn check_carryover(app: &mut App) {
 fn handle_todo_popup(app: &mut App, key: event::KeyEvent) {
     if key_match(&key, &app.config.keybindings.popup.confirm) {
         for todo in &app.pending_todos {
-            let _ = storage::append_entry(&app.config.data.log_path, todo);
+            let formatted = ui::parser::format_todo(todo, false);
+            let _ = storage::append_entry(&app.config.data.log_path, &formatted);
         }
         app.update_logs();
         app.show_todo_popup = false;
@@ -398,7 +399,8 @@ fn handle_editing_mode(app: &mut App, key: event::KeyEvent) {
     } else if key_match(&key, &app.config.keybindings.editing.newline) {
         app.textarea.insert_newline();
     } else if key_match(&key, &app.config.keybindings.editing.save)
-        || (key.code == event::KeyCode::Enter && !key.modifiers.contains(event::KeyModifiers::SHIFT))
+        || (key.code == event::KeyCode::Enter
+            && !key.modifiers.contains(event::KeyModifiers::SHIFT))
     {
         // 텍스트 영역의 모든 줄을 가져와서 저장
         let lines = app.textarea.lines().to_vec();

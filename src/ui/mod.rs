@@ -137,7 +137,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
                 // Or just show the content? The original code showed "- [ ] content".
                 // Let's standardise it to "- [ ] content" for the sidebar.
                 let display_text = format!("- [ ] {}", content);
-                
+
                 // 줄바꿈 처리
                 let wrapped = wrap(&display_text, todo_area_width);
                 let mut lines = Vec::new();

@@ -111,7 +111,7 @@ fn parse_log_content(content: &str, path_str: &str) -> Vec<LogEntry> {
 
 // ... imports
 // Remove regex import if not used elsewhere (it was only used here)
-// use regex::Regex; 
+// use regex::Regex;
 use crate::ui::parser;
 
 // ...
