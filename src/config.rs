@@ -273,10 +273,10 @@ impl Config {
         }
 
         let default_config = Self::default();
-        if let Ok(toml_str) = toml::to_string_pretty(&default_config) {
-            if let Err(e) = fs::write(config_path, toml_str) {
-                eprintln!("Failed to write default config: {}", e);
-            }
+        if let Ok(toml_str) = toml::to_string_pretty(&default_config)
+            && let Err(e) = fs::write(config_path, toml_str)
+        {
+            eprintln!("Failed to write default config: {}", e);
         }
         default_config
     }

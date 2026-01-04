@@ -45,11 +45,11 @@ pub fn tokenize(text: &str) -> Vec<LogToken<'_>> {
     let mut current_text = text;
 
     // 1. Extract Timestamp (Always at the start)
-    if current_text.starts_with('[') {
-        if let Some(end_idx) = current_text.find(']') {
-            tokens.push(LogToken::Timestamp(&current_text[..=end_idx]));
-            current_text = &current_text[end_idx + 1..];
-        }
+    if current_text.starts_with('[')
+        && let Some(end_idx) = current_text.find(']')
+    {
+        tokens.push(LogToken::Timestamp(&current_text[..=end_idx]));
+        current_text = &current_text[end_idx + 1..];
     }
 
     // 2. Extract Leading Whitespace (needed to separate timestamp from content)

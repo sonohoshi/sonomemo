@@ -145,12 +145,11 @@ pub fn get_last_file_pending_todos(log_path: &str) -> io::Result<Vec<String>> {
         let mut file_paths = Vec::new();
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.extension().and_then(|s| s.to_str()) == Some("md") {
-                if let Some(stem) = path.file_stem().and_then(|s| s.to_str())
-                    && stem != today
-                {
-                    file_paths.push(path);
-                }
+            if path.extension().and_then(|s| s.to_str()) == Some("md")
+                && let Some(stem) = path.file_stem().and_then(|s| s.to_str())
+                && stem != today
+            {
+                file_paths.push(path);
             }
         }
         file_paths.sort();

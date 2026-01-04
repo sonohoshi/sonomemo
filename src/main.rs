@@ -341,11 +341,7 @@ fn handle_normal_mode(app: &mut App, key: event::KeyEvent) {
             let entry = &app.logs[i];
             // Just call toggle logic; let it decide if it's a todo
             let _ = storage::toggle_todo_status(entry);
-            if app.is_search_result {
-                app.update_logs();
-            } else {
-                app.update_logs();
-            }
+            app.update_logs();
             app.logs_state.select(Some(i));
         }
     } else if key_match(&key, &app.config.keybindings.navigate.pomodoro) {
