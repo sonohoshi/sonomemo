@@ -208,27 +208,27 @@ impl<'a> App<'a> {
     }
 
     pub fn copy_current_log(&mut self) {
-        if let Some(i) = self.logs_state.selected() {
-            if i < self.logs.len() {
-                let text = &self.logs[i].content;
-                if let Ok(mut clipboard) = arboard::Clipboard::new() {
-                    if clipboard.set_text(text).is_ok() {
-                        self.notification = Some((
-                            "Copied to clipboard!".to_string(),
-                            Local::now() + chrono::Duration::seconds(2),
-                        ));
-                    } else {
-                        self.notification = Some((
-                            "Failed to copy!".to_string(),
-                            Local::now() + chrono::Duration::seconds(2),
-                        ));
-                    }
+        if let Some(i) = self.logs_state.selected()
+            && i < self.logs.len()
+        {
+            let text = &self.logs[i].content;
+            if let Ok(mut clipboard) = arboard::Clipboard::new() {
+                if clipboard.set_text(text).is_ok() {
+                    self.notification = Some((
+                        "Copied to clipboard!".to_string(),
+                        Local::now() + chrono::Duration::seconds(2),
+                    ));
                 } else {
                     self.notification = Some((
-                        "Clipboard init failed!".to_string(),
+                        "Failed to copy!".to_string(),
                         Local::now() + chrono::Duration::seconds(2),
                     ));
                 }
+            } else {
+                self.notification = Some((
+                    "Clipboard init failed!".to_string(),
+                    Local::now() + chrono::Duration::seconds(2),
+                ));
             }
         }
     }

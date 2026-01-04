@@ -270,8 +270,8 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 
     // Render notification overlay
     if let Some((message, _)) = &app.notification {
-        use ratatui::widgets::{Clear};
-        
+        use ratatui::widgets::Clear;
+
         let area = f.area();
         let width = 30;
         let height = 3;
@@ -282,7 +282,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Cyan))
             .style(Style::default().bg(Color::Black));
-        
+
         let paragraph = Paragraph::new(message.as_str())
             .block(block)
             .alignment(ratatui::layout::Alignment::Center);

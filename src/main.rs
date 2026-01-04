@@ -121,12 +121,12 @@ fn check_timers(app: &mut App) {
     {
         app.pomodoro_alert_expiry = None; // 알림 종료
     }
-    
+
     // Notification expiry check
-    if let Some((_, expiry)) = app.notification {
-        if Local::now() >= expiry {
-            app.notification = None;
-        }
+    if let Some((_, expiry)) = app.notification
+        && Local::now() >= expiry
+    {
+        app.notification = None;
     }
 }
 
