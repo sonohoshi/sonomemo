@@ -121,6 +121,13 @@ fn check_timers(app: &mut App) {
     {
         app.pomodoro_alert_expiry = None; // 알림 종료
     }
+    
+    // Notification expiry check
+    if let Some((_, expiry)) = app.notification {
+        if Local::now() >= expiry {
+            app.notification = None;
+        }
+    }
 }
 
 fn handle_key_input(app: &mut App, key: event::KeyEvent) {
@@ -360,6 +367,12 @@ fn handle_normal_mode(app: &mut App, key: event::KeyEvent) {
         // Initialize selection
         app.path_list_state.select(Some(0));
         app.show_path_popup = true;
+    } else if key_match(&key, &app.config.keybindings.navigate.next_todo) {
+        app.jump_next_todo();
+    } else if key_match(&key, &app.config.keybindings.navigate.prev_todo) {
+        app.jump_prev_todo();
+    } else if key_match(&key, &app.config.keybindings.navigate.copy) {
+        app.copy_current_log();
     }
 }
 

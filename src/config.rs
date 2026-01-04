@@ -129,6 +129,22 @@ pub struct NavigateBindings {
     pub graph: Vec<String>,
     pub toggle_todo: Vec<String>,
     pub path: Vec<String>,
+    #[serde(default = "default_next_todo")]
+    pub next_todo: Vec<String>,
+    #[serde(default = "default_prev_todo")]
+    pub prev_todo: Vec<String>,
+    #[serde(default = "default_copy")]
+    pub copy: Vec<String>,
+}
+
+fn default_next_todo() -> Vec<String> {
+    vec!["]".to_string()]
+}
+fn default_prev_todo() -> Vec<String> {
+    vec!["[".to_string()]
+}
+fn default_copy() -> Vec<String> {
+    vec!["y".to_string(), "ㅛ".to_string()]
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -188,7 +204,7 @@ impl Default for HelpMessages {
     fn default() -> Self {
         Self {
             navigate:
-                " [i] Edit  [t] Tag  [?] Search  [Enter] Toggle  [p] Pomodoro  [g] Graph [l] PATH [q] Quit "
+                " [i] Edit  [t] Tag  [?] Search  [Enter] Toggle  [p] Pomodoro  [y] Copy  [[]] Todo Nav  [g] Graph  [l] PATH  [q] Quit "
                     .to_string(),
             editing: " [Esc] Navigate Mode  [Enter] Save Memo  [Shift+Enter] New Line ".to_string(),
             search: " [Esc] Reset Search  [Enter] Filter ".to_string(),
@@ -207,6 +223,9 @@ impl Default for NavigateBindings {
             graph: vec!["g".to_string(), "ㅎ".to_string()],
             toggle_todo: vec!["enter".to_string()],
             path: vec!["l".to_string(), "ㅣ".to_string()],
+            next_todo: default_next_todo(),
+            prev_todo: default_prev_todo(),
+            copy: default_copy(),
         }
     }
 }

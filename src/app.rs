@@ -1,6 +1,7 @@
 use crate::config::Config;
 use crate::models::{InputMode, LogEntry};
 use crate::storage;
+use crate::ui::parser;
 use chrono::{DateTime, Local};
 use ratatui::widgets::ListState;
 use std::collections::HashMap;
@@ -40,6 +41,7 @@ pub struct App<'a> {
     // 설정 (안내 문구 등)
     pub config: Config,
     pub path_list_state: ListState,
+    pub notification: Option<(String, DateTime<Local>)>,
 }
 
 impl<'a> App<'a> {
@@ -110,6 +112,7 @@ impl<'a> App<'a> {
             pomodoro_alert_expiry: None,
             config,
             path_list_state: ListState::default(),
+            notification: None,
         }
     }
 
@@ -157,6 +160,77 @@ impl<'a> App<'a> {
             None => 0,
         };
         self.logs_state.select(Some(i));
+    }
+
+    pub fn jump_next_todo(&mut self) {
+        if self.logs.is_empty() {
+            return;
+        }
+        let current_index = self.logs_state.selected().unwrap_or(0);
+        for i in current_index + 1..self.logs.len() {
+            let content = &self.logs[i].content;
+            if parser::try_parse_todo(content).is_some() {
+                self.logs_state.select(Some(i));
+                return;
+            }
+        }
+        // Wrap around
+        for i in 0..=current_index {
+            let content = &self.logs[i].content;
+            if parser::try_parse_todo(content).is_some() {
+                self.logs_state.select(Some(i));
+                return;
+            }
+        }
+    }
+
+    pub fn jump_prev_todo(&mut self) {
+        if self.logs.is_empty() {
+            return;
+        }
+        let current_index = self.logs_state.selected().unwrap_or(0);
+        // Search backwards
+        for i in (0..current_index).rev() {
+            let content = &self.logs[i].content;
+            if parser::try_parse_todo(content).is_some() {
+                self.logs_state.select(Some(i));
+                return;
+            }
+        }
+        // Wrap around from end
+        for i in (current_index + 1..self.logs.len()).rev() {
+            let content = &self.logs[i].content;
+            if parser::try_parse_todo(content).is_some() {
+                self.logs_state.select(Some(i));
+                return;
+            }
+        }
+    }
+
+    pub fn copy_current_log(&mut self) {
+        if let Some(i) = self.logs_state.selected() {
+            if i < self.logs.len() {
+                let text = &self.logs[i].content;
+                if let Ok(mut clipboard) = arboard::Clipboard::new() {
+                    if clipboard.set_text(text).is_ok() {
+                        self.notification = Some((
+                            "Copied to clipboard!".to_string(),
+                            Local::now() + chrono::Duration::seconds(2),
+                        ));
+                    } else {
+                        self.notification = Some((
+                            "Failed to copy!".to_string(),
+                            Local::now() + chrono::Duration::seconds(2),
+                        ));
+                    }
+                } else {
+                    self.notification = Some((
+                        "Clipboard init failed!".to_string(),
+                        Local::now() + chrono::Duration::seconds(2),
+                    ));
+                }
+            }
+        }
     }
 
     pub fn quit(&mut self) {

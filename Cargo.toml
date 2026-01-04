@@ -21,4 +21,5 @@ serde = { version = "1.0.228", features = ["derive"] }
 toml = "0.9.8"
 regex = "1.12.2"
 open = "5.3.3"
+arboard = { version = "3.6.1", default-features = false }
 

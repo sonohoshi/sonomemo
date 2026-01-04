@@ -267,4 +267,28 @@ pub fn ui(f: &mut Frame, app: &mut App) {
     if app.show_path_popup {
         render_path_popup(f, app);
     }
+
+    // Render notification overlay
+    if let Some((message, _)) = &app.notification {
+        use ratatui::widgets::{Clear};
+        
+        let area = f.area();
+        let width = 30;
+        let height = 3;
+        let x = (area.width.saturating_sub(width)) / 2;
+        let y = area.height.saturating_sub(height + 2); // Slightly above bottom
+
+        let block = Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Cyan))
+            .style(Style::default().bg(Color::Black));
+        
+        let paragraph = Paragraph::new(message.as_str())
+            .block(block)
+            .alignment(ratatui::layout::Alignment::Center);
+
+        let rect = ratatui::layout::Rect::new(x, y, width, height);
+        f.render_widget(Clear, rect);
+        f.render_widget(paragraph, rect);
+    }
 }
