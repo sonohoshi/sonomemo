@@ -4,6 +4,7 @@ use std::fs::{self, OpenOptions};
 use std::io::{self, Write};
 use std::path::PathBuf;
 
+/// 지정된 경로에 로그 디렉토리가 존재하는지 확인하고, 없으면 생성합니다.
 pub fn ensure_log_dir(log_path: &str) -> io::Result<()> {
     let path = PathBuf::from(log_path);
     if !path.exists() {
@@ -12,6 +13,7 @@ pub fn ensure_log_dir(log_path: &str) -> io::Result<()> {
     Ok(())
 }
 
+/// 오늘 날짜에 해당하는 로그 파일의 경로를 생성합니다.
 fn get_today_file_path(log_path: &str) -> PathBuf {
     let today = Local::now().format("%Y-%m-%d").to_string();
     let mut path = PathBuf::from(log_path);
@@ -19,6 +21,9 @@ fn get_today_file_path(log_path: &str) -> PathBuf {
     path
 }
 
+/// 오늘 로그 파일에 새로운 항목을 추가합니다.
+///
+/// `content`: 추가할 로그 내용
 pub fn append_entry(log_path: &str, content: &str) -> io::Result<()> {
     ensure_log_dir(log_path)?;
     let path = get_today_file_path(log_path);
@@ -32,6 +37,7 @@ pub fn append_entry(log_path: &str, content: &str) -> io::Result<()> {
     Ok(())
 }
 
+/// 오늘 작성된 모든 로그 항목을 읽어옵니다.
 pub fn read_today_entries(log_path: &str) -> io::Result<Vec<LogEntry>> {
     ensure_log_dir(log_path)?;
     let path = get_today_file_path(log_path);
@@ -46,6 +52,7 @@ pub fn read_today_entries(log_path: &str) -> io::Result<Vec<LogEntry>> {
     Ok(parse_log_content(&content, &path_str))
 }
 
+/// 모든 로그 파일에서 검색어(`query`)가 포함된 항목을 찾습니다.
 pub fn search_entries(log_path: &str, query: &str) -> io::Result<Vec<LogEntry>> {
     ensure_log_dir(log_path)?;
     let dir = PathBuf::from(log_path);
@@ -84,6 +91,8 @@ pub fn search_entries(log_path: &str, query: &str) -> io::Result<Vec<LogEntry>> 
     Ok(results)
 }
 
+/// 로그 파일의 내용을 파싱하여 `LogEntry` 리스트로 변환합니다.
+/// 들여쓰기된 라인은 이전 항목의 내용으로 병합 처리합니다.
 fn parse_log_content(content: &str, path_str: &str) -> Vec<LogEntry> {
     let mut entries: Vec<LogEntry> = Vec::new();
 
@@ -116,6 +125,8 @@ use crate::ui::parser;
 
 // ...
 
+/// 특정 로그 항목의 할 일(체크박스) 상태를 토글합니다.
+/// 해당 파일의 정확한 라인을 찾아 내용을 수정합니다.
 pub fn toggle_todo_status(entry: &LogEntry) -> io::Result<()> {
     let content = fs::read_to_string(&entry.file_path)?;
     let mut lines: Vec<String> = content.lines().map(|s| s.to_string()).collect();
@@ -136,6 +147,8 @@ pub fn toggle_todo_status(entry: &LogEntry) -> io::Result<()> {
     Ok(())
 }
 
+/// 가장 최근(오늘 제외) 로그 파일에서 완료되지 않은 할 일 목록을 가져옵니다.
+/// 이월(carryover) 기능을 위해 사용됩니다.
 pub fn get_last_file_pending_todos(log_path: &str) -> io::Result<Vec<String>> {
     ensure_log_dir(log_path)?;
     let dir = PathBuf::from(log_path);
@@ -170,6 +183,7 @@ pub fn get_last_file_pending_todos(log_path: &str) -> io::Result<Vec<String>> {
     Ok(Vec::new())
 }
 
+/// 모든 로그 파일에서 태그('#')를 추출하여 빈도수 순으로 정렬해 반환합니다.
 pub fn get_all_tags(log_path: &str) -> io::Result<Vec<(String, usize)>> {
     use std::collections::HashMap;
 
@@ -201,6 +215,7 @@ pub fn get_all_tags(log_path: &str) -> io::Result<Vec<(String, usize)>> {
     Ok(tags)
 }
 
+/// 오늘 할 일 이월 작업이 이미 수행되었는지 확인합니다.
 pub fn is_carryover_done(log_path: &str) -> io::Result<bool> {
     ensure_log_dir(log_path)?;
     let path = get_today_file_path(log_path);
@@ -211,10 +226,13 @@ pub fn is_carryover_done(log_path: &str) -> io::Result<bool> {
     Ok(content.contains("System: Carryover Checked"))
 }
 
+/// 오늘 할 일 이월 작업이 완료되었음을 시스템 마커로 기록합니다.
 pub fn mark_carryover_done(log_path: &str) -> io::Result<()> {
     append_entry(log_path, "System: Carryover Checked")
 }
 
+/// 날짜별 활동(로그 수) 통계를 수집합니다.
+/// "잔디밭(contribution graph)" 시각화를 위해 사용됩니다.
 pub fn get_activity_stats(log_path: &str) -> io::Result<std::collections::HashMap<String, usize>> {
     use std::collections::HashMap;
 

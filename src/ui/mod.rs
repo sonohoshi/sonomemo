@@ -24,6 +24,10 @@ use popups::{
     render_siren_popup, render_tag_popup, render_todo_popup,
 };
 
+/// 애플리케이션의 전체 UI를 렌더링하는 메인 함수입니다.
+///
+/// `f`: Ratatui 프레임 객체
+/// `app`: 애플리케이션 상태 객체
 pub fn ui(f: &mut Frame, app: &mut App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)

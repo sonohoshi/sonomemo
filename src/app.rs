@@ -7,6 +7,8 @@ use ratatui::widgets::ListState;
 use std::collections::HashMap;
 use tui_textarea::TextArea;
 
+/// 애플리케이션의 전체 상태를 관리하는 구조체입니다.
+/// UI 렌더링에 필요한 모든 데이터와 상태(입력 모드, 로그 목록, 팝업 상태 등)를 포함합니다.
 pub struct App<'a> {
     pub input_mode: InputMode,
     pub textarea: TextArea<'a>,
@@ -45,6 +47,8 @@ pub struct App<'a> {
 }
 
 impl<'a> App<'a> {
+    /// `App`의 새로운 인스턴스를 생성하고 초기화합니다.
+    /// 설정 파일을 로드하고, 오늘 날짜의 로그를 읽어옵니다.
     pub fn new() -> App<'a> {
         let config = Config::load();
 
@@ -116,6 +120,7 @@ impl<'a> App<'a> {
         }
     }
 
+    /// 현재 로그 파일(오늘)의 내용을 다시 읽어서 메모리 상의 로그 목록을 갱신합니다.
     pub fn update_logs(&mut self) {
         if let Ok(logs) = storage::read_today_entries(&self.config.data.log_path) {
             self.logs = logs;
@@ -126,6 +131,7 @@ impl<'a> App<'a> {
         }
     }
 
+    /// 로그 리스트 선택 커서를 위로 이동합니다.
     pub fn scroll_up(&mut self) {
         if self.logs.is_empty() {
             return;
@@ -144,6 +150,7 @@ impl<'a> App<'a> {
         self.logs_state.select(Some(i));
     }
 
+    /// 로그 리스트 선택 커서를 아래로 이동합니다.
     pub fn scroll_down(&mut self) {
         if self.logs.is_empty() {
             return;
@@ -162,6 +169,7 @@ impl<'a> App<'a> {
         self.logs_state.select(Some(i));
     }
 
+    /// 다음 할 일(Todo) 항목으로 커서를 이동합니다. 리스트 끝에 도달하면 처음부터 다시 검색합니다.
     pub fn jump_next_todo(&mut self) {
         if self.logs.is_empty() {
             return;
@@ -184,6 +192,7 @@ impl<'a> App<'a> {
         }
     }
 
+    /// 이전 할 일(Todo) 항목으로 커서를 이동합니다. 리스트 시작에 도달하면 끝부분부터 역순 검색합니다.
     pub fn jump_prev_todo(&mut self) {
         if self.logs.is_empty() {
             return;
@@ -207,6 +216,7 @@ impl<'a> App<'a> {
         }
     }
 
+    /// 현재 선택된 로그의 내용을 클립보드로 복사합니다. 성공/실패 여부를 알림으로 표시합니다.
     pub fn copy_current_log(&mut self) {
         if let Some(i) = self.logs_state.selected()
             && i < self.logs.len()
@@ -233,10 +243,12 @@ impl<'a> App<'a> {
         }
     }
 
+    /// 애플리케이션 종료 플래그를 설정합니다. 메인 루프가 이를 감지하여 종료합니다.
     pub fn quit(&mut self) {
         self.should_quit = true;
     }
 
+    /// 애플리케이션의 입력 모드를 전환하고, 그에 따른 초기화 작업(플레이스홀더 변경 등)을 수행합니다.
     pub fn transition_to(&mut self, mode: InputMode) {
         // Mode specific entry logic
         match mode {

@@ -5,7 +5,7 @@ use ratatui::{
     text::{Line, Span},
 };
 
-/// Represents semantic parts of a log line.
+/// 로그 라인의 의미적 구성 요소들을 정의하는 열거형입니다.
 #[derive(Debug, PartialEq, Clone)]
 pub enum LogToken<'a> {
     Timestamp(&'a str),     // [HH:MM:SS]
@@ -17,8 +17,8 @@ pub enum LogToken<'a> {
     Whitespace(&'a str),    // Space or other whitespace
 }
 
-/// Tries to match a todo checkbox at the start of the string (e.g. "- [ ]" or "- [x]").
-/// Returns Some((is_checked, matched_length)) if found.
+/// 문자열 시작 부분에서 할 일 체크박스("- [ ]" 또는 "- [x]") 패턴을 찾습니다.
+/// 발견 시 `Some((체크여부, 매칭된 길이))`를 반환합니다.
 pub fn try_parse_todo(text: &str) -> Option<(bool, usize)> {
     static TODO_REGEX: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
     let todo_regex = TODO_REGEX.get_or_init(|| regex::Regex::new(r"-\s*\[(\s*|x|X)\]").unwrap());
@@ -33,13 +33,13 @@ pub fn try_parse_todo(text: &str) -> Option<(bool, usize)> {
     None
 }
 
-/// Formats a todo item string with the standard checkbox prefix.
+/// 표준 체크박스 접두어를 사용하여 할 일 항목 문자열을 포맷팅합니다.
 pub fn format_todo(content: &str, checked: bool) -> String {
     let checkbox = if checked { "[x]" } else { "[ ]" };
     format!("- {} {}", checkbox, content)
 }
 
-/// Tokenizes a raw log line into a list of semantic tokens.
+/// 원본 로그 라인을 의미 있는 토큰 리스트로 분리(Tokenize)합니다.
 pub fn tokenize(text: &str) -> Vec<LogToken<'_>> {
     let mut tokens = Vec::new();
     let mut current_text = text;
@@ -121,7 +121,7 @@ pub fn tokenize(text: &str) -> Vec<LogToken<'_>> {
     tokens
 }
 
-/// Renders a list of tokens into a Ratatui Line using the given theme.
+/// 토큰 리스트를 현재 테마를 적용하여 Ratatui `Line` 객체로 렌더링합니다.
 pub fn render_tokens<'a>(tokens: Vec<LogToken<'a>>, theme: &Theme) -> Line<'static> {
     let mut spans = Vec::new();
 
@@ -182,8 +182,8 @@ pub fn render_tokens<'a>(tokens: Vec<LogToken<'a>>, theme: &Theme) -> Line<'stat
     Line::from(spans)
 }
 
-/// Toggles the checkbox state of a log line (if it has one).
-/// Returns the new line string.
+/// 로그 라인의 체크박스 상태를 토글(체크 <-> 해제)합니다.
+/// 변경된 전체 라인 문자열을 반환합니다.
 pub fn toggle_checkbox(text: &str) -> String {
     static TODO_REGEX: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
     let todo_regex = TODO_REGEX.get_or_init(|| regex::Regex::new(r"-\s*\[(\s*|x|X)\]").unwrap());
@@ -207,9 +207,8 @@ pub fn toggle_checkbox(text: &str) -> String {
     text.to_string()
 }
 
-/// Extracts the content of an unchecked todo item.
-/// Returns Some(content) if it is a Todo and is NOT checked.
-/// Returns None otherwise.
+/// 완료되지 않은(체크되지 않은) 할 일 항목의 내용을 추출합니다.
+/// 할 일이 아니거나 체크된 상태라면 `None`을 반환합니다.
 pub fn extract_pending_content(text: &str) -> Option<String> {
     let tokens = tokenize(text);
     let mut is_todo = false;
@@ -245,7 +244,7 @@ pub fn extract_pending_content(text: &str) -> Option<String> {
     }
 }
 
-/// Main entry point (Facade)
+/// 로그 라인 파싱의 메인 진입점입니다. 토큰화와 렌더링을 한번에 수행합니다.
 pub fn parse_log_line(text: &str, theme: &Theme) -> Line<'static> {
     let tokens = tokenize(text);
     render_tokens(tokens, theme)

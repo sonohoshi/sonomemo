@@ -1,0 +1,52 @@
+
+name: Deploy Rust Docs to Pages
+
+on:
+  push:
+    branches: ["main", "master"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Rust
+        run: |
+          rustup update stable
+          rustup default stable
+          
+      - name: Build Documentation
+        # --document-private-items: 바이너리 프로젝트의 내부 구조까지 모두 문서화합니다.
+        # --no-deps: 의존성 라이브러리가 아닌 내 코드만 문서화하여 빌드 속도를 높입니다.
+        run: cargo doc --no-deps --document-private-items
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'target/doc'
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

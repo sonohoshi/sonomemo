@@ -3,6 +3,10 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 
+/// 주어진 키 입력이 특정 바인딩 목록 중 하나와 일치하는지 확인합니다.
+///
+/// `key`: 사용자가 입력한 키 이벤트
+/// `bindings`: "ctrl+c", "enter" 등 설정된 키 바인딩 문자열 리스트
 pub fn key_match(key: &KeyEvent, bindings: &[String]) -> bool {
     for binding in bindings {
         if is_match(key, binding) {
@@ -74,6 +78,7 @@ fn is_match(key: &KeyEvent, binding: &str) -> bool {
     key.modifiers.contains(target_modifiers)
 }
 
+/// 애플리케이션의 전체 설정을 담는 최상위 구조체입니다.
 #[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub struct Config {
     #[serde(default)]
@@ -88,11 +93,13 @@ pub struct Config {
     pub data: DataConfig,
 }
 
+/// 데이터 관련 설정입니다 (예: 로그 저장 경로).
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct DataConfig {
     pub log_path: String,
 }
 
+/// UI의 입력 필드에 표시될 플레이스홀더 텍스트 설정입니다.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Placeholders {
     pub navigate: String,
@@ -100,6 +107,7 @@ pub struct Placeholders {
     pub search: String,
 }
 
+/// UI 하단 등에 표시될 도움말 메시지 설정입니다.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct HelpMessages {
     pub navigate: String,
@@ -107,6 +115,7 @@ pub struct HelpMessages {
     pub search: String,
 }
 
+/// 전체 키 바인딩 설정을 모아둔 구조체입니다.
 #[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub struct KeyBindings {
     #[serde(default)]
@@ -119,6 +128,7 @@ pub struct KeyBindings {
     pub popup: PopupBindings,
 }
 
+/// 'Navigate' (기본 탐색) 모드에서의 키 바인딩입니다.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct NavigateBindings {
     pub quit: Vec<String>,
@@ -147,6 +157,7 @@ fn default_copy() -> Vec<String> {
     vec!["y".to_string(), "ㅛ".to_string()]
 }
 
+/// 'Editing' (작성/수정) 모드에서의 키 바인딩입니다.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct EditingBindings {
     pub save: Vec<String>,    // Enter
@@ -154,12 +165,14 @@ pub struct EditingBindings {
     pub cancel: Vec<String>,  // Esc
 }
 
+/// 'Search' (검색) 모드에서의 키 바인딩입니다.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SearchBindings {
     pub submit: Vec<String>,
     pub cancel: Vec<String>,
 }
 
+/// 팝업 창 등에서의 키 바인딩입니다.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct PopupBindings {
     pub confirm: Vec<String>,
@@ -168,6 +181,7 @@ pub struct PopupBindings {
     pub down: Vec<String>,
 }
 
+/// UI 색상 테마 설정입니다. 가능한 색상은 `tui` 크레이트의 색상 이름(예: "Red", "Blue") 혹은 RGB 값("r,g,b")입니다.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Theme {
     pub border_default: String,
@@ -278,6 +292,10 @@ impl Default for Theme {
 }
 
 impl Config {
+    /// `config.toml` 파일에서 설정을 로드합니다.
+    ///
+    /// 파일이 존재하지 않거나 파싱에 실패하면 기본값을 사용하며,
+    /// 파일이 없을 경우 기본 설정으로 새 파일을 생성합니다.
     pub fn load() -> Self {
         let config_path = Path::new("config.toml");
         if config_path.exists() {
