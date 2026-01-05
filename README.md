@@ -164,5 +164,9 @@ todo_wip = "Red"
 ## 🛠️ 기여하기 (Contributing)
 알아서 잘 해주시면 제미나이한테 넘기겠습니다.
 
+## 📚 문서 (Documentation)
+코드 구조나 자세한 구현 내용이 궁금하다면 자동 생성된 문서를 참고하세요:
+[https://sonohoshi.github.io/sonomemo](https://sonohoshi.github.io/sonomemo)
+
 ## 📄 라이선스
 MIT License (LICENSE 파일을 확인하세요)
