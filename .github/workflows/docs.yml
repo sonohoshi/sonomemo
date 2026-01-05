@@ -32,6 +32,9 @@ jobs:
         # --no-deps: 의존성 라이브러리가 아닌 내 코드만 문서화하여 빌드 속도를 높입니다.
         run: cargo doc --no-deps --document-private-items
 
+      - name: Create Redirect File
+        run: echo "<meta http-equiv=\"refresh\" content=\"0; url=sonomemo/index.html\">" > target/doc/index.html
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
